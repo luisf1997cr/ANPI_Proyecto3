@@ -5,9 +5,9 @@
  */
 #include <stdio.h>
 #include "iostream"
-#include<iomanip>
-#include<cmath>
-#include<math.h>
+#include <iomanip>
+#include <cmath>
+#include <math.h>
 #include <armadillo>
 #include <fstream>
 #include <omp.h>
@@ -26,42 +26,50 @@ using namespace arma;
  * almacenan en una matriz de tamaño tamxtam
  */
 
-mat temperaturaPunto(int I,int J,int fila,int tam,colvec* colum,double arriba,double abajo,double izquierda,
-        double derecha){
-    int i=I;
-    int j=J;
-    mat mat(tam,tam);
+mat temperaturaPunto(int I, int J, int fila, int tam, colvec *colum, double arriba, double abajo, double izquierda,
+                     double derecha)
+{
+    int i = I;
+    int j = J;
+    mat mat(tam, tam);
     mat.zeros();
-    mat.at(i,j)=-4;
+    mat.at(i, j) = -4;
 
-    if(i-1==0){
+    if (i - 1 == 0)
+    {
 
-        colum->at(fila,0)=colum->at(fila,0)+izquierda;
+        colum->at(fila, 0) = colum->at(fila, 0) + izquierda;
+    }
+    else
+    {
+        mat.at(i - 1, j) = 1;
+    }
+    if (i + 1 == (tam))
+    {
+        colum->at(fila, 0) = colum->at(fila, 0) + derecha;
+    }
+    else
+    {
+        mat.at(i + 1, j) = 1;
+    }
+    if (j - 1 == 0)
+    {
+        colum->at(fila, 0) = colum->at(fila, 0) + abajo;
+    }
 
+    else
+    {
+        mat.at(i, j - 1) = 1;
     }
-    else{
-        mat.at(i-1,j)=1;
+    if (j + 1 == tam)
+    {
+        colum->at(fila, 0) = colum->at(fila, 0) + arriba;
     }
-    if (i+1==(tam)){
-        colum->at(fila,0)=colum->at(fila,0)+derecha;
+    else
+    {
+        mat.at(i, j + 1) = 1;
     }
-    else{
-        mat.at(i+1,j)=1;
-    }
-    if(j-1==0){
-            colum->at(fila,0)=colum->at(fila,0)+abajo;
-        }
-
-    else{
-            mat.at(i,j-1)=1;
-        }
-    if(j+1==tam){
-                colum->at(fila,0)=colum->at(fila,0)+arriba;
-            }
-    else{
-                mat.at(i,j+1)=1;
-            }
-return mat;
+    return mat;
 }
 
 /*!
@@ -74,17 +82,18 @@ return mat;
  * este método recibe un matriz que representa las constatntes de una ecuacion
  * y las agrega una matriz que representa un sistema de ecuaciones
  */
-void matrizToFilaToMatriz(mat parcial,mat* final,int tam,int fila){
+void matrizToFilaToMatriz(mat parcial, mat *final, int tam, int fila)
+{
 
-    int z=0;
-    for(int i=1;i<tam;i++){
-        for(int j=1;j<tam;j++){
-        final->at(fila,z)=parcial.at(i,j);
-        z++;
+    int z = 0;
+    for (int i = 1; i < tam; i++)
+    {
+        for (int j = 1; j < tam; j++)
+        {
+            final->at(fila, z) = parcial.at(i, j);
+            z++;
         }
     }
-
-
 }
 
 /*!
@@ -95,58 +104,58 @@ void matrizToFilaToMatriz(mat parcial,mat* final,int tam,int fila){
  * Resuelve el sistema de ecuaciones que representa matriz usando el método de
  * Gauss-Seidel y retorna un vector con las soluciones obtenidas
  */
-mat  liebmannSolver(int tam,mat matriz)
+mat liebmannSolver(int tam, mat matriz)
 {
 
-    double error=0.001,y; //error= máximo error permitido
-    int numEcua,flag=0;
-    numEcua=((tam-1)*(tam-1));
-    mat matrizFinal(numEcua,numEcua+1);           // matriz de ecuacion
-    matrizFinal=matriz;
-    mat x(1,numEcua);                //matriz con la ecuaciones
+    double error = 0.001, y; //error= máximo error permitido
+    int numEcua, flag = 0;
+    numEcua = ((tam - 1) * (tam - 1));
+    mat matrizFinal(numEcua, numEcua + 1); // matriz de ecuacion
+    matrizFinal = matriz;
+    mat x(1, numEcua); //matriz con la ecuaciones
     x.zeros();
 
-    
-        int i=0;
-        int j=0;
-        for (i=0;i<numEcua;i++){                    //matriz diagonalmente dominante
-            for (int k=i+1;k<numEcua;k++){
-                if (abs(matrizFinal.at(i,i))<abs(matrizFinal.at(k,i))){
-                    #pragma omp parallel for shared(matrizFinal)  num_threads(2)
-                    for (j=0;j<=numEcua;j++)
-                    {
-                        
-                        int temp=matrizFinal.at(i,j);
-                        matrizFinal.at(i,j)=matrizFinal.at(k,j);
-                        matrizFinal.at(k,j)=temp;
-                    }
-                }
-            }  
-        }
-   
-    do   //cálculo de temperaturas (gauss seidel)
-    {
-        #pragma omp parallel for shared(matrizFinal,x,y) num_threads(2)
-        for (int i=0;i<numEcua;i++)
+    int i = 0;
+    int j = 0;
+    for (i = 0; i < numEcua; i++)
+    { //matriz diagonalmente dominante
+        for (int k = i + 1; k < numEcua; k++)
         {
-            y=x.at(0,i);
-            x.at(0,i)=matrizFinal.at(i,numEcua);
-            for (int j=0;j<numEcua;j++)
+            if (abs(matrizFinal.at(i, i)) < abs(matrizFinal.at(k, i)))
             {
-                if (j!=i)
-                    x.at(0,i)=x.at(0,i)-matrizFinal.at(i,j)*x.at(j);
+#pragma omp parallel for shared(matrizFinal) num_threads(2)
+                for (j = 0; j <= numEcua; j++)
+                {
+
+                    int temp = matrizFinal.at(i, j);
+                    matrizFinal.at(i, j) = matrizFinal.at(k, j);
+                    matrizFinal.at(k, j) = temp;
+                }
             }
-            x.at(0,i)=x.at(0,i)/matrizFinal.at(i,i);
-            if (abs(x.at(0,i)-y)<=error){            //Comparación con el valor anterior
+        }
+    }
+
+    do //cálculo de temperaturas (gauss seidel)
+    {
+#pragma omp parallel for shared(matrizFinal, x, y) num_threads(2)
+        for (int i = 0; i < numEcua; i++)
+        {
+            y = x.at(0, i);
+            x.at(0, i) = matrizFinal.at(i, numEcua);
+            for (int j = 0; j < numEcua; j++)
+            {
+                if (j != i)
+                    x.at(0, i) = x.at(0, i) - matrizFinal.at(i, j) * x.at(j);
+            }
+            x.at(0, i) = x.at(0, i) / matrizFinal.at(i, i);
+            if (abs(x.at(0, i) - y) <= error)
+            { //Comparación con el valor anterior
                 flag++;
-
-               
-            }    
-
+            }
         }
 
-    }while(flag<numEcua);
-    
+    } while (flag < numEcua);
+
     /*cout<<"\n vector solución:\n";
     for (int i=0;i<numEcua;i++){
         temp=x.at(0,i);
@@ -157,47 +166,48 @@ mat  liebmannSolver(int tam,mat matriz)
             }*/
     return x;
 }
-mat  liebmannSolverSinMejora(int tam,mat matriz)
+mat liebmannSolverSinMejora(int tam, mat matriz)
 {
 
-    double error=0.0001,y; //error= máximo error permitido
-    int numEcua,flag=0;
-    numEcua=((tam-1)*(tam-1));
-    mat matrizFinal(numEcua,numEcua+1);           // matriz de ecuacion
-    matrizFinal=matriz;
-    mat x(1,numEcua);                //matriz con la ecuaciones
+    double error = 0.0001, y; //error= máximo error permitido
+    int numEcua, flag = 0;
+    numEcua = ((tam - 1) * (tam - 1));
+    mat matrizFinal(numEcua, numEcua + 1); // matriz de ecuacion
+    matrizFinal = matriz;
+    mat x(1, numEcua); //matriz con la ecuaciones
     x.zeros();
-    for (int i=0;i<numEcua;i++)//matriz diagonalmente dominante
+    for (int i = 0; i < numEcua; i++) //matriz diagonalmente dominante
 
-        for (int k=i+1;k<numEcua;k++)
-            if (abs(matrizFinal.at(i,i))<abs(matrizFinal.at(k,i)))
+        for (int k = i + 1; k < numEcua; k++)
+            if (abs(matrizFinal.at(i, i)) < abs(matrizFinal.at(k, i)))
 
-                for (int j=0;j<=numEcua;j++)
+                for (int j = 0; j <= numEcua; j++)
                 {
-                    int temp=matrizFinal.at(i,j);
-                    matrizFinal.at(i,j)=matrizFinal.at(k,j);
-                    matrizFinal.at(k,j)=temp;
+                    int temp = matrizFinal.at(i, j);
+                    matrizFinal.at(i, j) = matrizFinal.at(k, j);
+                    matrizFinal.at(k, j) = temp;
                 }
 
-    do                            //cálculo de temperaturas
+    do //cálculo de temperaturas
     {
 
-        for (int i=0;i<numEcua;i++)
+        for (int i = 0; i < numEcua; i++)
         {
-            y=x.at(0,i);
-            x.at(0,i)=matrizFinal.at(i,numEcua);
-            for (int j=0;j<numEcua;j++)
+            y = x.at(0, i);
+            x.at(0, i) = matrizFinal.at(i, numEcua);
+            for (int j = 0; j < numEcua; j++)
             {
-                if (j!=i)
-                    x.at(0,i)=x.at(0,i)-matrizFinal.at(i,j)*x.at(j);
+                if (j != i)
+                    x.at(0, i) = x.at(0, i) - matrizFinal.at(i, j) * x.at(j);
             }
-            x.at(0,i)=x.at(0,i)/matrizFinal.at(i,i);
-            if (abs(x.at(0,i)-y)<=error){ flag++;}            //Comparación con el valor anterior
-               
-
+            x.at(0, i) = x.at(0, i) / matrizFinal.at(i, i);
+            if (abs(x.at(0, i) - y) <= error)
+            {
+                flag++;
+            } //Comparación con el valor anterior
         }
 
-    }while(flag<numEcua);
+    } while (flag < numEcua);
 
     return x;
 }
@@ -248,33 +258,39 @@ mat  liebmannSolverSinMejora(int tam,mat matriz)
 /*!
  * convierte de un vector a una matriz con la posición correcta de cada temperatura en la placa
  */
-mat rowToMatrix(mat resp,int tam){
-    mat matriz(tam-1,tam-1);
-    int z=0;
-    int i,j;
-    #pragma omp for collapse(2)
-    for(j=0;j<tam-1;j++){
-    for(i=tam-2;i>=0;i--){
+mat rowToMatrix(mat resp, int tam)
+{
+    mat matriz(tam - 1, tam - 1);
+    int z = 0;
+    int i, j;
+#pragma omp for collapse(2)
+    for (j = 0; j < tam - 1; j++)
+    {
+        for (i = tam - 2; i >= 0; i--)
+        {
 
-            matriz.at(i,j)=resp.at(0,z);
+            matriz.at(i, j) = resp.at(0, z);
             z++;
-            }
         }
-        return matriz;
+    }
+    return matriz;
 }
-mat rowToMatrixSinMejora(mat resp,int tam){
-    mat matriz(tam-1,tam-1);
-    int z=0;
-    int i,j;
+mat rowToMatrixSinMejora(mat resp, int tam)
+{
+    mat matriz(tam - 1, tam - 1);
+    int z = 0;
+    int i, j;
 
-    for(j=0;j<tam-1;j++){
-        for(i=tam-2;i>=0;i--){
+    for (j = 0; j < tam - 1; j++)
+    {
+        for (i = tam - 2; i >= 0; i--)
+        {
 
-            matriz.at(i,j)=resp.at(0,z);
+            matriz.at(i, j) = resp.at(0, z);
             z++;
-            }
         }
-        return matriz;
+    }
+    return matriz;
 }
 /*!
  * Parámetros: arriba,abajo,izquierda,derecha: temperaturas de los lados de la placa
@@ -283,75 +299,70 @@ mat rowToMatrixSinMejora(mat resp,int tam){
 /*!
  * calcula un vector para los nodos de la placa
  */
-mat vectoresFlujo(mat temps,int tam, int arriba,int abajo,int izquierda, int derecha){
-    mat matriz(1,(tam-1)*(tam-1)*2);
-    double qx=0,qy=0,k=0.49,valxA=0,valxB=0,valyA=0,valyB=0;
-        int z=0,dX=10,dY=10;
+mat vectoresFlujo(mat temps, int tam, int arriba, int abajo, int izquierda, int derecha)
+{
+    mat matriz(1, (tam - 1) * (tam - 1) * 2);
+    double qx = 0, qy = 0, k = 0.49, valxA = 0, valxB = 0, valyA = 0, valyB = 0;
+    int z = 0, dX = 10, dY = 10;
 
-        for(int i=0;i<tam-1;i++){
-        for(int j=0;j<tam-1;j++){
+    for (int i = 0; i < tam - 1; i++)
+    {
+        for (int j = 0; j < tam - 1; j++)
+        {
 
-            if(j-1<0){
-                valxB=izquierda;
-                valxA=temps.at(i,j+1);
-
+            if (j - 1 < 0)
+            {
+                valxB = izquierda;
+                valxA = temps.at(i, j + 1);
             }
-            else if(j+1>=(tam-1)){
-                valxA=derecha;
-                valxB=temps.at(i,j-1);
+            else if (j + 1 >= (tam - 1))
+            {
+                valxA = derecha;
+                valxB = temps.at(i, j - 1);
             }
-            else{
+            else
+            {
 
-                valxA=temps.at(i,j+1);
-                
-                
+                valxA = temps.at(i, j + 1);
 
-
-                valxB=temps.at(i,j-1);
-                
-
+                valxB = temps.at(i, j - 1);
             }
-                qx=-k*((valxA-valxB)/(2*dX));
-                
+            qx = -k * ((valxA - valxB) / (2 * dX));
 
+            if (i + 1 >= (tam - 1))
+            {
+                valyB = abajo;
+                valyA = temps.at(i - 1, j);
+            }
+            else if (i - 1 < 0)
+            {
+                valyA = arriba;
+                valyB = temps.at(i + 1, j);
+            }
+            else
+            {
+                valyA = temps.at(i - 1, j);
+                valyB = temps.at(i + 1, j);
+            }
 
-                if(i+1>=(tam-1)){
-                    valyB=abajo;
-                    valyA=temps.at(i-1,j);
+            qy = -k * ((valyA - valyB) / (2 * dY));
 
-                }
-                else if(i-1<0){
-                    valyA=arriba;
-                    valyB=temps.at(i+1,j);
-                }
-                else{
-                    valyA=temps.at(i-1,j);
-                    valyB=temps.at(i+1,j);
-                }
-                
-                
+            double magni = sqrt((qx * qx) + (qy * qy));
+            double unitX = 0.5 * (qx / magni);
+            double unitY = 0.5 * (qy / magni);
 
-                    qy=-k*((valyA-valyB)/(2*dY));
-                    
-
-                double magni=sqrt((qx*qx)+(qy*qy));
-                double unitX=0.5*(qx/magni);
-                double unitY=0.5*(qy/magni);
-
-                /*if((unitX<0 && unitX>-0.1)||(unitX>0 && unitX<0.1)){
+            /*if((unitX<0 && unitX>-0.1)||(unitX>0 && unitX<0.1)){
                     unitX=0;
                 }
                 if((unitY<0 && unitY>-0.1)||(unitY>0 && unitY<0.1)){
                     unitY=0;
-                }*/ 
-                matriz.at(0,z)=unitX;
-                matriz.at(0,z+1)=unitY;
-    
-                z=z+2;
-                }
-            }
+                }*/
+            matriz.at(0, z) = unitX;
+            matriz.at(0, z + 1) = unitY;
 
-            return matriz;
+            z = z + 2;
+        }
+    }
+
+    return matriz;
 }
-
-
