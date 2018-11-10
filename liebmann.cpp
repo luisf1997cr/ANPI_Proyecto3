@@ -15,7 +15,8 @@
 using namespace std;
 using namespace arma;
 
-/*! Parámetros: I: fila en la que se encuantra un nodo
+/*! Parámetros: 
+ * I: fila en la que se encuentra un nodo
  * J: Columna en la que se encuentra un nodo
  * fila: fila en la que se escriben datos del vector de soluciones
  * tam:tamaño de la placa
@@ -79,8 +80,8 @@ mat temperaturaPunto(int I, int J, int fila, int tam, colvec *colum, double arri
  * fila: fila de la placa a la cual corresponde el nodo de la matriz parcial
  */
 /*!
- * este método recibe un matriz que representa las constatntes de una ecuacion
- * y las agrega una matriz que representa un sistema de ecuaciones
+ * este método recibe un matriz que representa las constanttes de una ecuacion
+ * y les agrega una matriz que representa un sistema de ecuaciones
  */
 void matrizToFilaToMatriz(mat parcial, mat *final, int tam, int fila)
 {
@@ -166,6 +167,7 @@ mat liebmannSolver(int tam, mat matriz)
             }*/
     return x;
 }
+
 mat liebmannSolverSinMejora(int tam, mat matriz)
 {
 
@@ -211,6 +213,7 @@ mat liebmannSolverSinMejora(int tam, mat matriz)
 
     return x;
 }
+
 /*!
  * Parámetros: arriba,abajo,izquierda,derecha: temperaturas de los lados de la placa
  * tam tamaño de la placa
