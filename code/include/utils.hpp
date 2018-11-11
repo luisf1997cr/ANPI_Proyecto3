@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <vector>
 
+namespace anpi
+{
 template <typename T>
 std::vector<T> linspace(T a, T b, size_t N)
 {
@@ -14,3 +16,4 @@ std::vector<T> linspace(T a, T b, size_t N)
         *x = val;
     return xs;
 }
+} // namespace anpi
