@@ -14,7 +14,7 @@ struct Edge
     Edge()
     {
         gradient = false;
-        isolated = false;
+        isolated = true;
     }
 };
 
@@ -38,18 +38,6 @@ class LiebmnanSolver
      */
     LiebmnanSolver();
 
-    /**
- * @brief Construct a new Liebmnan Solver object
- * 
- * @param toptemp vector of temperatures on the top of the plaque
- * @param botttemp vector of temperatures on the bottom of the plaque
- * @param rightemp vector of temperatures on the right side of the plaque
- * @param leftemp vector of temperatures on the left side of the plaque
- * @param hsize the number of horizontal nodes to calculate, must be the same size
- *                  as toptemp an bottemp if they are not isolated.
- * @param vsize the number of vertical nodes to calculate, must be the same size
- *                  as lefttemp and righttemp if they are not isolated.
- */
     LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp) //, Matrix<double> &temps)
     {
         top = toptemp;
@@ -62,6 +50,44 @@ class LiebmnanSolver
         error = ERROR;
         lambda = LAMBDA;
     }
+
+    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize) //, Matrix<double> &temps)
+    {
+        top = toptemp;
+        bottom = botttemp;
+        right = rightemp;
+        left = leftemp;
+        height = vsize;
+        width = hsize;
+        // tempsMatrix = temps;
+        error = ERROR;
+        lambda = LAMBDA;
+    }
+    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror) //, Matrix<double> &temps)
+    {
+        top = toptemp;
+        bottom = botttemp;
+        right = rightemp;
+        left = leftemp;
+        height = vsize;
+        width = hsize;
+        // tempsMatrix = temps;
+        error = inerror;
+        lambda = LAMBDA;
+    }
+    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror, double inlambda) //, Matrix<double> &temps)
+    {
+        top = toptemp;
+        bottom = botttemp;
+        right = rightemp;
+        left = leftemp;
+        height = vsize;
+        width = hsize;
+        // tempsMatrix = temps;
+        error = inerror;
+        lambda = inlambda;
+    }
+
     int lieb()
     {
         int finalRows, finalCols, currRows, currCols,
@@ -147,7 +173,7 @@ class LiebmnanSolver
             bool lrIsolated = false;
             double tt, bt, lt, rt;
 
-            //if none of the sides is isolated
+            //if one of the sides is isolated
             if ((top.isolated || bottom.isolated || right.isolated || left.isolated))
             {
                 //top isolated
@@ -231,14 +257,15 @@ class LiebmnanSolver
         double currTemp, calcTemp, calcError;
         do
         {
+            bigTemp = 0;
+            bigTempOld = 0;
             //iterate through rows
             for (int i = 0; i < rows; ++i)
             {
                 //iterate through columns
                 for (int j = 0; j < cols; ++j)
                 {
-                    bigTemp = 0;
-                    bigTempOld = 0;
+
                     currTemp = temperatureMatrix[i][j];
 
                     //////////////////////////////////top check///////////////////////////////////////////
@@ -643,6 +670,7 @@ class LiebmnanSolver
         }
 
         Edge avgEdge;
+        avgEdge.isolated = false;
         std::vector<double> avgTemps;
 
         //if it's all the same temperature

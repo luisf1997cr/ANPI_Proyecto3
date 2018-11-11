@@ -6,10 +6,11 @@
 # Author: Pablo Alvarado
 # Date  : 28.12.2017
 
-find_package (Boost COMPONENTS system filesystem REQUIRED)
+find_package (Boost COMPONENTS system filesystem program_options REQUIRED)
 include_directories (${CMAKE_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS})
 
 file(GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
+# file(GLOB SRCS RELATIVE ${CMAKE_SOURCE_DIR}/include *.cpp)
 file(GLOB HEADERS RELATIVE ${CMAKE_SOURCE_DIR}/include *.?pp *.h)
 
 # list(REMOVE_ITEM SRCS

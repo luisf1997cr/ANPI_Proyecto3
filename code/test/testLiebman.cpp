@@ -34,6 +34,12 @@ void simpleLiebTest()
   // m.fill(0);
   std::cout << "\nTest cuadrada " << std::endl;
   Edge top, bot, left, right;
+  //set them to not isolated since isolated by default
+  top.isolated = false;
+  bot.isolated = false;
+  right.isolated = false;
+  left.isolated = false;
+
   top.temperatures = {5, 5};
   bot.temperatures = {0, 0};
   right.temperatures = {1, 1};
@@ -87,6 +93,12 @@ void simpleLiebTestRect()
   // m.fill(0);
 
   Edge top, bot, left, right;
+  //set them to not isolated since isolated by default
+  top.isolated = false;
+  bot.isolated = false;
+  right.isolated = false;
+  left.isolated = false;
+
   top.temperatures = {5, 5, 5, 5};
   bot.temperatures = {0, 0, 0, 0};
   right.temperatures = {1, 1, 1};
@@ -109,6 +121,13 @@ void liebmanSeriousTests()
 {
   //temperature variables
   Edge top, bot, left, right;
+
+  //set them to not isolated since isolated by default
+  top.isolated = false;
+  bot.isolated = false;
+  right.isolated = false;
+  left.isolated = false;
+
   int numMatrices;
 
   //test 512x512
@@ -188,30 +207,12 @@ void liebmanSeriousTests()
   std::cout << "\nNumber of iterations it took: " << numMatrices << std::endl;
 }
 
-struct ank
-{
-  int j = 0;
-};
-ank f()
-{
-  ank thisone;
-  thisone.j = 23;
-  return thisone;
-}
 void prueba()
 {
   std::cout << (9 / 8) << std::endl;
 
   Matrix<int> a(2, 2, 1);
   Matrix<int> b(5, 6);
-
-  ank test = f();
-  std::cout << test.j << std::endl;
-
-  std::vector<int> vec;
-  vec.resize(3, 5);
-  for (int i = 0; i < vec.size(); i++)
-    std::cout << vec[i] << std::endl;
 
   // b.fill(a);
 
