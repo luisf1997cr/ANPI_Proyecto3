@@ -198,6 +198,11 @@ class LiebmnanSolver
                     tt = top.temperatures[0];
                     bt = top.temperatures[0];
                 }
+                else
+                {
+                    tt = top.temperatures[0];
+                    bt = bottom.temperatures[0];
+                }
 
                 //right isolated
                 if (right.isolated)
@@ -215,17 +220,14 @@ class LiebmnanSolver
                 //left isolated
                 else if (left.isolated)
                 {
-                    tt = right.temperatures[0];
-                    bt = right.temperatures[0];
+                    lt = right.temperatures[0];
+                    rt = right.temperatures[0];
                 }
-            }
-            //no side is isolated
-            else
-            {
-                tt = top.temperatures[0];
-                bt = bottom.temperatures[0];
-                lt = left.temperatures[0];
-                rt = right.temperatures[0];
+                else
+                {
+                    rt = right.temperatures[0];
+                    lt = left.temperatures[0];
+                }
             }
 
             //if the plaque is completely isolated

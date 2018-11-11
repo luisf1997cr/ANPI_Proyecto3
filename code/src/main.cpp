@@ -15,6 +15,7 @@
 #include "Liebman.hpp"
 #include "MatrixUtils.hpp"
 #include "utils.hpp"
+#include "PlotPy.hpp"
 
 #include <boost/program_options.hpp>
 #include <boost/type_traits/is_complex.hpp>
@@ -253,8 +254,11 @@ int main(int argc, char *argv[])
     //do the liebman calculations
     anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda);
     ls.lieb();
-    anpi::printMatrix(ls.tempsMatrix);
-
+    // anpi::printMatrix(ls.tempsMatrix);
+    anpi::Plot2d<double> plotter;
+    plotter.initialize();
+    plotter.imgshow(ls.tempsMatrix);
+    plotter.show();
     //end calculations with no visualization
 
     if (vm.count("-q"))
