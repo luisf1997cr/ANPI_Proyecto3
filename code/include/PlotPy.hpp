@@ -56,7 +56,7 @@ namespace anpi {
      *
      * Each id is associated with a different plot window.
      */
-    void initialize(int id);
+    void initialize();
 
     /// Set plot title
     void setTitle(const std::string& title);
@@ -100,11 +100,36 @@ namespace anpi {
               const std::string& legend,
               const std::string& color="r");
 
+     /**
+     * Plot an area using quiver to print arrows
+     * @param datax values of x
+     * @param datay values of y 
+     * @param datax values of u 
+     * @param datav values of v
+     */
+    void quiver(std::vector<T>& datax,
+                std::vector<T>& datay,
+                std::vector<T>& datau,
+                std::vector<T>& datav);
+
+    
+    /**
+     * Plot a image using interpolation
+     * the image comes as a matrix
+     * @param Matrix of element
+     */
+
+
+    void imgshow(anpi::Matrix<T>&);
+
     
     /**
      * Show all curves plotted so far.
      */
     void show();
+
+
+
 
 
   }; //class Plot2d
