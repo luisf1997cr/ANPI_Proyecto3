@@ -34,38 +34,69 @@ namespace anpi {
   }
 
   template <typename T>
-  void  Plot2d<T>::quiver(std::vector<T>& datax,std::vector<T>& datay,std::vector<T>& datau,std::vector<T>& datav) {
+  void  Plot2d<T>::quiver(anpi::Matrix<T>& image) {
+
+    std::string FluxFun = "def Flux(Matriz):\n";
+        auxFun.append("	k = 1\n");
+        auxFun.append("	delX = 1\n");
+        auxFun.append("	delY = 1\n");
+        auxFun.append("	if((len(Z[0])+len(Z))//(2)>=10):\n");
+        auxFun.append("		n=(len(Z[0])+len(Z))//(2*10)\n");
+        auxFun.append("	else:\n");
+        auxFun.append("		n=1\n");
+        auxFun.append("	dx = np.linspace(0,(len(Z[0])-n),len(Z[0])//n)	\n");
+        auxFun.append("	dy = np.linspace(0,(len(Z)-n),len(Z)//n)	\n");
+        auxFun.append("	X,Y = np.meshgrid(dx,dy)\n");
+        auxFun.append("	u = np.zeros((len(X),len(X[0])))\n");
+        auxFun.append("	v = np.zeros((len(X),len(X[0])))\n");
+        auxFun.append("	a,b=0,0\n");
+        auxFun.append("	for x in range(len(X)):\n");
+        auxFun.append("		for y in range(len(X[0])):\n");
+        auxFun.append("			if(a!=0 and a!=len(Z)-1 and b!=0 and b!=len(Z[0])-1):\n");
+        auxFun.append("				v[x][y]= k*(Z[a+1][b]-Z[a-1][b])/(2*delX)\n");
+        auxFun.append("				u[x][y]= -k*(Z[a][b+1]-Z[a][b-1])/(2*delY)	\n");
+        auxFun.append("			else:\n");
+        auxFun.append("				v[x][y]= 0\n");
+        auxFun.append("				u[x][y]= 0\n");
+        auxFun.append("			b+=n\n");
+        auxFun.append("		a+=n\n");
+        auxFun.append("		b=0\n");
+        auxFun.append("	return [X,Y,u,v]\n");
+      PyRun_SimpleString(FluxFun.c_str());
+      PyRun_SimpleString("FluxMatriz = Flux(image)");
+      PyRun_SimpleString("ax.quiver(FluxMatriz[0],FluxMatriz[1],FluxMatriz[2],FluxMatriz[3])");
+
 
     // Convert the vectors of data into Python strings
-    std::string xstr  = "X = [";
-    std::string ystr  = "Y = [";
-    std::string ustr  = "U = [";
-    std::string vstr  = "V = [";
+    //std::string xstr  = "X = [";
+    //std::string ystr  = "Y = [";
+    //std::string ustr  = "U = [";
+    //std::string vstr  = "V = [";
 
-    char c=',';
-    for(size_t i = 0; i < datax.size(); i++) {
-      if (i == datax.size()-1) {
-        c=']';
-      }
-      xstr.append(std::to_string(datax[i])   + c);
-      ystr.append(std::to_string(datay[i])   + c);
+    //char c=',';
+    //for(size_t i = 0; i < datax.size(); i++) {
+    //  if (i == datax.size()-1) {
+    //    c=']';
+    //  }
+    //  xstr.append(std::to_string(datax[i])   + c);
+    //  ystr.append(std::to_string(datay[i])   + c);
 
-    }
-    c=',';
-    for(size_t i = 0; i < datav.size(); i++) {
-      if (i == datav.size()-1) {
-        c=']';
-      }
-      ustr.append(std::to_string(datau[i])   + c);
-      vstr.append(std::to_string(datav[i])   + c);
-    }
-    c=',';
+    //}
+    //c=',';
+    //for(size_t i = 0; i < datav.size(); i++) {
+    //  if (i == datav.size()-1) {
+    //    c=']';
+    //  }
+    //  ustr.append(std::to_string(datau[i])   + c);
+    //  vstr.append(std::to_string(datav[i])   + c);
+    //}
+    //c=',';
 
-    PyRun_SimpleString(xstr.c_str());
-    PyRun_SimpleString(ystr.c_str());
-    PyRun_SimpleString(ustr.c_str());
-    PyRun_SimpleString(vstr.c_str());
-    PyRun_SimpleString("ax.quiver(X, Y, U, V)");
+    //PyRun_SimpleString(xstr.c_str());
+    //PyRun_SimpleString(ystr.c_str());
+    //PyRun_SimpleString(ustr.c_str());
+    //PyRun_SimpleString(vstr.c_str());
+    //PyRun_SimpleString("ax.quiver(X, Y, U, V)");
 }
 
   template <typename T>
@@ -161,8 +192,6 @@ void Plot2d<T>::imgshow(anpi::Matrix<T>& image){
   PyRun_SimpleString("divider = make_axes_locatable(ax)");
   PyRun_SimpleString("cax = divider.append_axes('right', size='5%', pad=0.05)");
   PyRun_SimpleString("plt.colorbar(im, cax=cax)");
-
-
   }
 
   template <typename T>
