@@ -8,6 +8,10 @@ namespace anpi
 {
 
 //struct that holds the temperatures at the edges of the plaque
+/**
+ * @brief truct that holds the temperatures at the edges of the plaque
+ * 
+ */
 struct Edge
 {
     std::vector<double> temperatures;
@@ -20,11 +24,17 @@ struct Edge
     }
 };
 
+/**
+ * 
+ * @brief CLass that solves and contains solution
+ * 
+ * 
+ */
 class LiebmnanSolver
 {
     const int MAX_ITER = 100;
-    const int MAX_MATRIX_GROWTH = 16;
-    const double ERROR = 0.0001;
+    const int MAX_MATRIX_GROWTH = 2;
+    const double ERROR = 0.001;
     const double LAMBDA = 1.37;
 
     Edge top, bottom, right, left;
@@ -212,6 +222,7 @@ class LiebmnanSolver
             }
 
             ++totalMatrices;
+            currMatrix.DumpToFile("currMatrix.txt");
         }
 
         std::cout << "\nMatrices created: " << totalMatrices << std::endl;
@@ -320,13 +331,14 @@ class LiebmnanSolver
             return 1;
         } //end of matrix size 1
 
-        double bigTemp, bigTempOld;
+        double bigerror = 0;
 
         double currTemp, calcTemp, calcError;
         do
         {
-            bigTemp = 0;
-            bigTempOld = 0;
+            // bigTemp = 0;
+            // bigTempOld = 0;
+            bigerror = 0;
             //iterate through rows
             for (int i = 0; i < rows; ++i)
             {
@@ -567,11 +579,13 @@ class LiebmnanSolver
                     //set the new temperture
                     temperatureMatrix[i][j] = calcTemp;
 
-                    //check if the new calculated temp is the biggest to compare for error
-                    if (std::abs(calcTemp) > bigTemp)
+                    //calculate the error
+                    calcError = std::abs(std::abs(calcTemp) - std::abs(currTemp)) / std::abs(calcTemp) * 100;
+
+                    //check if the new calculated error is the biggest to compare
+                    if (calcError > bigerror)
                     {
-                        bigTemp = std::abs(calcTemp);
-                        bigTempOld = std::abs(currTemp);
+                        bigerror = calcError;
                     }
 
                 } //end for column
@@ -582,9 +596,7 @@ class LiebmnanSolver
 
             //calculate error of the biggest temperature
 
-            calcError = (std::abs(bigTemp - bigTempOld) / bigTemp) * 100;
-
-        } while (calcError > error);
+        } while (bigerror > error);
 
         return iterations;
     }

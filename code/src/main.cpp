@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
         ("bottom,b", po::value<std::vector<double>>(), "Indicates bottom border temperature in degrees Celsius")                      //
         ("left,l", po::value<std::vector<double>>(), "Indicates left border temperature in degrees Celsius")                          //
         ("right,r", po::value<std::vector<double>>(), "Indicates right border temperature in degrees Celsius")                        //
-        ("error,e", po::value<double>()->default_value(0.0001), "Desired error percentage used for calculation")                      //
+        ("error,e", po::value<double>()->default_value(0.001), "Desired error percentage used for calculation")                       //
         ("lambda,a", po::value<double>()->default_value(1.3), "Desired relaxation step for Liebman. Must be between 1 and 2")         //
         ("isolate,i", po::value<std::string>(), "Which border to isolate, i.e top, bottom, left or right")                            //
         ("profile,p", po::value<std::string>(), "Indicates file to use for the termical profile")                                     //
@@ -256,17 +256,25 @@ int main(int argc, char *argv[])
     //do the liebman calculations
     anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda);
 
+    std::cout << "\nEl método Liebman Piramidal:\n " << std::endl;
     auto t_start = std::chrono::high_resolution_clock::now();
     ls.lieb();
     auto t_end = std::chrono::high_resolution_clock::now();
     double timeSec((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
     std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
 
-    // anpi::Matrix<double> m(v, h);
-    // std::cout << "iterations: " << ls.liebman(m, top, bot, right, left)
-    //           << std::endl;
+    std::cout << "\nEl método Liebman normal: \n " << std::endl;
+    anpi::Matrix<double> m(v, h);
+    t_start = std::chrono::high_resolution_clock::now();
+    auto it = ls.liebman(m, top, bot, right, left);
+    t_end = std::chrono::high_resolution_clock::now();
+    timeSec = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
+    std::cout << "iterations: " << it
+              << std::endl;
     // anpi::printMatrix(ls.tempsMatrix);
-    ls.tempsMatrix.DumpToFile("matrizFinal.txt");
+    std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
+
+    // ls.tempsMatrix.DumpToFile("matrizFinal.txt");
     anpi::Plot2d<double> plotter;
     plotter.initialize();
     plotter.imgshow(ls.tempsMatrix);

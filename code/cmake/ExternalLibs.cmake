@@ -17,7 +17,7 @@ if (ANPI_ENABLE_OpenMP)
   endif()
 endif (ANPI_ENABLE_OpenMP)
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
 
 include_directories (${CMAKE_SOURCE_DIR}/include
                      ${Boost_INCLUDE_DIR})
