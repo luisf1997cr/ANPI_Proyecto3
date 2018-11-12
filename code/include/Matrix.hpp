@@ -230,7 +230,6 @@ public:
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   std::string Dump() const
   {
     std::ostringstream oss;
@@ -239,16 +238,16 @@ public:
     {
       for (int j = 0; j < c; ++j)
       {
-        oss << this[i][j] << "  ";
+        // T data = *this[i][j];
+        oss << this->operator()(i, j) << "      ";
       }
       oss << "\n";
     }
     return oss.str();
   }
-
-  void DumpToFile()
+  void DumpToFile(std::string filename)
   {
-    std::ofstream os("output.txt");
+    std::ofstream os(filename);
     os << Dump();
   }
 

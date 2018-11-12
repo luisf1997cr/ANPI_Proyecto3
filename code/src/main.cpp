@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         ("bottom,b", po::value<std::vector<double>>(), "Indicates bottom border temperature in degrees Celsius")                      //
         ("left,l", po::value<std::vector<double>>(), "Indicates left border temperature in degrees Celsius")                          //
         ("right,r", po::value<std::vector<double>>(), "Indicates right border temperature in degrees Celsius")                        //
-        ("error,e", po::value<double>()->default_value(0.001), "Desired error percentage used for calculation")                       //
+        ("error,e", po::value<double>()->default_value(0.0001), "Desired error percentage used for calculation")                      //
         ("lambda,a", po::value<double>()->default_value(1.3), "Desired relaxation step for Liebman. Must be between 1 and 2")         //
         ("isolate,i", po::value<std::string>(), "Which border to isolate, i.e top, bottom, left or right")                            //
         ("profile,p", po::value<std::string>(), "Indicates file to use for the termical profile")                                     //
@@ -250,14 +250,19 @@ int main(int argc, char *argv[])
 
       std::cout << "agarro isolate: " << vm["isolate"].as<std::string>() << std::endl;
     }
-
+    /////////////////////////////////////////////LIEBAMN CALL///////////////////////////////////////
     //do the liebman calculations
     anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda);
     ls.lieb();
+    // anpi::Matrix<double> m(v, h);
+    // std::cout << "iterations: " << ls.liebman(m, top, bot, right, left)
+    //           << std::endl;
     // anpi::printMatrix(ls.tempsMatrix);
+    ls.tempsMatrix.DumpToFile("matrizFinal.txt");
     anpi::Plot2d<double> plotter;
     plotter.initialize();
     plotter.imgshow(ls.tempsMatrix);
+    // plotter.imgshow(m);
     plotter.show();
     //end calculations with no visualization
 

@@ -1,3 +1,17 @@
+/**
+ * @file MatrixUtils.hpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2018-11-11
+ * 
+ * @copyright Copyright (c) 2018
+ * 
+ */
+
+#ifndef ANPI_MATRIXUTILS_HPP
+#define ANPI_MATRIXUTILS_HPP
+
 #include <iostream>
 #include "Matrix.hpp"
 
@@ -70,3 +84,5 @@ void permuteMatrix(anpi::Matrix<T> &A, std::vector<size_t> permutations)
 }
 
 } // namespace anpi
+
+#endif

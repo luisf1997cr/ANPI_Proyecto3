@@ -1,4 +1,5 @@
 #include "Matrix.hpp"
+#include "MatrixUtils.hpp"
 #include <cstdlib>
 #include <iostream>
 
@@ -118,29 +119,44 @@ class LiebmnanSolver
             iterPerMatrix = liebman(currMatrix, currTop, currBot, currRight, currLeft);
 
             //print statistics
-            std::cout << "\nMatrix number: " << totalMatrices << "      used iterations: " << iterPerMatrix << std::endl;
+            std::cout << "\nMatrix number: " << totalMatrices << "  |  size:  " << currRows << "x" << currCols << "  |  used iterations: " << iterPerMatrix << std::endl;
 
-            //calcualted liebman for the final matrix
+            //calculated liebman for the final matrix
             if (currCols == finalCols && currRows == finalRows)
             {
                 tempsMatrix = currMatrix;
                 break;
             }
 
+            // if (currCols + 2 > finalCols || currRows + 2 > finalRows)
+            // {
+            //     growOneMatrix(currMatrix);
+            // }
+            // else
+            // {
+            //     growMatrix(currMatrix);
+            // }
+
+            // currCols = currMatrix.cols();
+            // currRows = currMatrix.rows();
+
             //else we grow the temperature matrix and calculate liebman again
-            // if we are able to duplicate
-            if (currCols * 2 < finalCols && currRows * 2 < finalRows)
+
+            // if we are able to duplicate the whole matrix
+            if (currCols * 2 <= finalCols && currRows * 2 <= finalRows)
             {
                 duplicateTempMatrix(currMatrix);
                 currCols = currCols * 2;
                 currRows = currRows * 2;
             }
-            else if (currCols * 2 < finalCols)
+            //if we are able to duplicate width
+            else if (currCols * 2 <= finalCols)
             {
                 duplicateWidthTempMatrix(currMatrix);
                 currCols = currCols * 2;
             }
-            else if (currRows * 2 < finalRows)
+            //if we are able to duplicate height
+            else if (currRows * 2 <= finalRows)
             {
                 duplicateHeightTempMatrix(currMatrix);
                 currRows = currRows * 2;
@@ -150,6 +166,18 @@ class LiebmnanSolver
                 fillBiggerTempMatrix(currMatrix, finalRows, finalCols);
                 currCols = finalCols;
                 currRows = finalRows;
+                // if (currCols + 2 > finalCols || currRows + 2 > finalRows)
+                // {
+                //     growOneMatrix(currMatrix);
+                //     currCols += 1;
+                //     currRows += 1;
+                // }
+                // else
+                // {
+                //     growMatrix(currMatrix);
+                //     currCols += 2;
+                //     currRows += 2;
+                // }
             }
 
             ++totalMatrices;
@@ -228,6 +256,13 @@ class LiebmnanSolver
                     rt = right.temperatures[0];
                     lt = left.temperatures[0];
                 }
+            }
+            else
+            {
+                tt = bottom.temperatures[0];
+                bt = bottom.temperatures[0];
+                rt = right.temperatures[0];
+                lt = left.temperatures[0];
             }
 
             //if the plaque is completely isolated
@@ -311,6 +346,7 @@ class LiebmnanSolver
                                 }
                             }
                         }
+
                         //if on the right corner
                         else if (j == cols - 1)
                         {
@@ -362,6 +398,7 @@ class LiebmnanSolver
                             }
                         }
                     }
+
                     //////////////////////////////////bottom check///////////////////////////////////////////
                     //if at the bottom
                     else if (i == rows - 1)
@@ -451,6 +488,7 @@ class LiebmnanSolver
                             }
                         }
                     }
+
                     //corners were checked when calculating top and bottom
 
                     //////////////////////////////////left check///////////////////////////////////////////
@@ -493,16 +531,16 @@ class LiebmnanSolver
                         calcTemp = (temperatureMatrix[i + 1][j] + temperatureMatrix[i - 1][j] + temperatureMatrix[i][j + 1] + temperatureMatrix[i][j - 1]) / 4;
                     }
 
-                    //aplyrelaxation
+                    //apply relaxation
                     calcTemp = lambda * calcTemp + (1 - lambda) * currTemp;
                     //set the new temperture
                     temperatureMatrix[i][j] = calcTemp;
 
                     //check if the new calculated temp is the biggest to compare for error
-                    if (calcTemp > bigTemp)
+                    if (std::abs(calcTemp) > bigTemp)
                     {
-                        bigTemp = calcTemp;
-                        bigTempOld = currTemp;
+                        bigTemp = std::abs(calcTemp);
+                        bigTempOld = std::abs(currTemp);
                     }
 
                 } //end for column
@@ -512,7 +550,8 @@ class LiebmnanSolver
             ++iterations;
 
             //calculate error of the biggest temperature
-            calcError = (abs(bigTemp - bigTempOld) / bigTemp) * 100;
+
+            calcError = (std::abs(bigTemp - bigTempOld) / bigTemp) * 100;
 
         } while (calcError > error);
 
@@ -525,9 +564,56 @@ class LiebmnanSolver
         int srows = tempMatrix.rows();
         int bcols = scols * 2;
         int brows = srows * 2;
-        Matrix<double> big(brows, bcols);
-
         int bigI, bigJ;
+        Matrix<double> big(brows, bcols);
+        bigI = 0;
+        bigJ = 0;
+
+        // fill outer sides of matrix
+        // for (int i = 0; i < srows / 2; ++i)
+        // {
+        //     for (int j = 0; j < scols / 2; ++j)
+        //     {
+        //         big[bigI][bigJ] = tempMatrix[i][j];
+        //         ++bigJ;
+        //     }
+        //     ++bigI;
+        //     bigJ = 0;
+        // }
+        // bigJ += srows;
+        // bigJ = (scols / 2) + scols;
+
+        // for (int i = srows / 2; i < srows; ++i)
+        // {
+        //     for (int j = scols / 2; j < scols; ++j)
+        //     {
+        //         big[bigI][bigJ] = tempMatrix[i][j];
+        //         ++bigJ;
+        //     }
+        //     ++bigI;
+        //     bigJ = (scols / 2) + scols;
+        // }
+
+        // duplicate with matrix at it's center
+
+        // bigI = srows / 2;
+        // bigJ = scols / 2;
+
+        // for (int i = 0; i < srows; ++i)
+        // {
+        //     for (int j = 0; j < scols; ++j)
+        //     {
+        //         big[bigI][bigJ] = tempMatrix[i][j];
+        //         ++bigJ;
+        //     }
+        //     ++bigI;
+        //     bigJ = scols / 2;
+        // }
+        // // anpi::printMatrix(big);
+        // big.DumpToFile("ultimaDuplicada.txt");
+
+        // duplicate by copying
+        // int bigI, bigJ;
         for (int i = 0; i < srows; ++i)
             for (int j = 0; j < scols; ++j)
             {
@@ -581,6 +667,151 @@ class LiebmnanSolver
         tempMatrix = big;
     }
 
+    void growMatrix(Matrix<double> &small)
+    {
+        int scols = small.cols();
+        int srows = small.rows();
+        int bcols = scols + 2;
+        int brows = srows + 2;
+
+        Matrix<double> big(brows, bcols);
+
+        // for (int i = 1; i <= srows; ++i)
+        //     for (int j = 1; j <= scols; ++j)
+        //     {
+        //         big[i][j] = small[i - 1][j - 1];
+        //     }
+
+        //growing from the inside like a cross, using the average of the side cells as the new temp
+        for (int is = 0, ib = 0; is < srows; ++is, ++ib)
+        {
+            for (int js = 0, jb = 0; js < scols; ++js, ++jb)
+            {
+                //if on the middle horizontal band
+                if (is == srows / 2)
+                {
+                    // if on the middle square
+                    if (js == scols / 2)
+                    {
+
+                        // big[ib][jb] = small[is][js];
+
+                        //all central square with same value
+                        big[ib][jb] = big[ib][jb + 1] = big[ib + 1][jb] = big[ib + 1][jb + 1] = (small[is][js - 1] + small[is - 1][js] + small[is][js] + small[is - 1][js - 1]) / 4;
+
+                        // big[ib][jb + 1] = (small[is][js] + small[is - 1][js]) / 2;
+
+                        // big[ib + 1][jb] = (small[is][js - 1] + small[is + 1][js]) / 2;
+                        // big[ib + 1][jb + 1] = (small[is][js] + small[is + 1][js]) / 2;
+
+                        // set the lower squares
+                        big[ib + 2][jb] = big[ib + 2][jb + 1] = (small[is][js] + small[is][js - 1]) / 2;
+                        jb += 2;
+
+                        big[ib][jb] = big[ib + 1][jb] = (small[is][js] + small[is - 1][js]) / 2;
+
+                        big[ib + 2][jb] = small[is][js];
+                    }
+
+                    else
+                    {
+
+                        // big[ib][jb] = small[is][js];
+                        big[ib][jb] = big[ib + 1][jb] = (small[is][js] + small[is - 1][js]) / 2;
+                        big[ib + 2][jb] = small[is][js];
+                        // ib += 2;
+                    }
+                }
+
+                //if on the middle vertical band
+                else if (js == scols / 2)
+                {
+
+                    // big[ib][jb] = small[is][js];
+                    big[ib][jb] = big[ib][jb + 1] = (small[is][js] + small[is][js - 1]) / 2;
+                    jb += 2;
+
+                    big[ib][jb] = small[is][js];
+                }
+                else
+                {
+                    big[ib][jb] = small[is][js];
+                }
+                // big.DumpToFile("big.txt");
+            }
+
+            //if on the middle horizontal band
+            if (is == srows / 2)
+                ib += 2;
+        }
+        // big.fill(small);
+        // small.DumpToFile("SMALL.txt");
+        // big.DumpToFile("big.txt");
+        small = big;
+    }
+
+    void growOneMatrix(Matrix<double> &small)
+    {
+        int scols = small.cols();
+        int srows = small.rows();
+        int bcols = scols + 1;
+        int brows = srows + 1;
+
+        Matrix<double> big(brows, bcols);
+
+        //growing from the inside like a cross, using the average of the side cells as the new temp
+        for (int is = 0, ib = 0; is < srows; ++is, ++ib)
+        {
+            for (int js = 0, jb = 0; js < scols; ++js, ++jb)
+            {
+                //if on the middle horizontal band
+                if (is == srows / 2)
+                {
+                    big[ib + 1][jb] = small[is][js];
+                    big[ib][jb] = (small[is][js] + small[is - 1][js]) / 2;
+
+                    //if on the middle square
+                    if (js == scols / 2)
+                    {
+                        big[ib][jb] = (small[is - 1][js - 1] + small[is - 1][js] + small[is][js - 1] + small[is][js]) / 4;
+                        big[ib + 1][jb] = (small[is][js] + small[is][js - 1]) / 2;
+                        big[ib][jb + 1] = (small[is][js] + small[is - 1][js]) / 2;
+
+                        big[ib + 1][jb + 1] = small[is][js];
+
+                        ++jb;
+                    }
+                }
+
+                //if on the middle vertical band
+                else if (js == scols / 2)
+                {
+                    big[ib][jb] = (small[is][js] + small[is][js - 1]) / 2;
+
+                    ++jb;
+
+                    big[ib][jb] = small[is][js];
+                }
+                else
+                {
+                    big[ib][jb] = small[is][js];
+                }
+            }
+            //if on the middle horizontal band
+            if (is == srows / 2)
+                ++ib;
+        }
+
+        // for (int i = 1; i <= srows; ++i)
+        //     for (int j = 1; j <= scols; ++j)
+        //     {
+        //         big[i][j] = small[i - 1][j - 1];
+        //     }
+        // big.fill(small);
+        big.DumpToFile("UltimaCrecidaenUno.txt");
+        small = big;
+    }
+
     /**
      * @brief Fills a matrix that is less than double the size of another matrix used to fill it. It copies 
      * the last rigthmost columns of the smaller matrix  into the rightmost columns of the big matirx, it
@@ -591,7 +822,8 @@ class LiebmnanSolver
      * @param rows The row size of the new bigger matrix
      * @param cols The column size of the new bigger matrix
      */
-    void fillBiggerTempMatrix(Matrix<double> &small, int rows, int cols)
+    void
+    fillBiggerTempMatrix(Matrix<double> &small, int rows, int cols)
     {
         int scols = small.cols();
         int srows = small.rows();
@@ -605,25 +837,115 @@ class LiebmnanSolver
 
         Matrix<double> big(rows, cols);
 
-        big.fill(small);
-
-        for (int i = 0; i < srows; ++i)
-            for (int j = scols; j < cols; ++j)
+        //growing from the inside like a cross, using the average of the side cells as the new temp
+        for (int is = 0, ib = 0; is < srows; ++is, ++ib)
+        {
+            for (int js = 0, jb = 0; js < scols; ++js, ++jb)
             {
-                big[i][j] = small[i][j - colDiff];
-            }
-        for (int i = srows; i < rows; ++i)
-            for (int j = 0; j < cols; ++j)
-            {
-                if (j < scols)
+                //if on the middle horizontal band
+                if (is == srows / 2)
                 {
-                    big[i][j] = small[i - rowDiff][j];
+
+                    //if on the middle rectangle
+                    if (js == scols / 2)
+                    {
+                        double temp = (small[is - 1][js - 1] + small[is - 1][js] + small[is][js - 1] + small[is][js]) / 4;
+                        double rightSidetemp = (small[is][js] + small[is][js - 1]) / 2;
+                        double downSidetemp = (small[is][js] + small[is - 1][js]) / 2;
+
+                        //for each new item
+                        for (int k = 0; k <= rowDiff; ++k)
+                        {
+                            for (int p = 0; p <= colDiff; p++)
+                            {
+                                big[ib + k][jb + p] = temp;
+
+                                //add corner temp
+                                if (p == colDiff && k == rowDiff)
+                                {
+                                    big[ib + k][jb + p] = small[is][js];
+                                }
+                                //add the right side temp
+                                else if (p == colDiff)
+                                {
+                                    big[ib + k][jb + p] = rightSidetemp;
+                                }
+                                //add bottom temps
+                                else if (k == rowDiff)
+                                {
+                                    big[ib + k][jb + p] = downSidetemp;
+                                }
+
+                                // ++jb;
+                            }
+                        }
+                        jb += colDiff;
+                    }
+                    // if not on the rectangle, grow vertically
+                    else
+                    {
+                        //temp is the average between the middle temps
+                        double temp = (small[is][js] + small[is - 1][js]) / 2;
+                        for (int k = 0; k < rowDiff; ++k)
+                        {
+                            big[ib + k][jb] = temp;
+                        }
+                        big[ib + rowDiff][jb] = small[is][js];
+                    }
+                }
+
+                //if on the middle vertical band (horizontal growth)
+                else if (js == scols / 2)
+                {
+                    double temp = (small[is][js] + small[is][js - 1]) / 2;
+
+                    for (int p = 0; p < colDiff; ++p)
+                    {
+                        big[ib][jb + p] = temp;
+                    }
+
+                    jb += colDiff;
+
+                    big[ib][jb] = small[is][js];
                 }
                 else
                 {
-                    big[i][j] = small[i - rowDiff][j - colDiff];
+                    big[ib][jb] = small[is][js];
                 }
             }
+            //if on the middle horizontal band
+            if (is == srows / 2)
+                ib += rowDiff;
+        }
+
+        // for (int i = 1; i <= srows; ++i)
+        //     for (int j = 1; j <= scols; ++j)
+        //     {
+        //         big[i][j] = small[i - 1][j - 1];
+        //     }
+        // big.fill(small);
+        // big.DumpToFile("UltimaCrecidaenUno.txt");
+        small = big;
+
+        // big.fill(small);
+
+        // for (int i = 0; i < srows; ++i)
+        //     for (int j = scols; j < cols; ++j)
+        //     {
+        //         big[i][j] = small[i][j - colDiff];
+        //     }
+        // for (int i = srows; i < rows; ++i)
+        //     for (int j = 0; j < cols; ++j)
+        //     {
+        //         if (j < scols)
+        //         {
+        //             big[i][j] = small[i - rowDiff][j];
+        //         }
+        //         else
+        //         {
+        //             big[i][j] = small[i - rowDiff][j - colDiff];
+        //         }
+        //     }
 
         small = big;
     }
@@ -724,6 +1046,6 @@ class LiebmnanSolver
         avgEdge.isolated = false;
         return avgEdge;
     }
-};
+}; // namespace anpi
 
 } // namespace anpi
