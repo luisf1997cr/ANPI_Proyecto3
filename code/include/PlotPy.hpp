@@ -18,9 +18,10 @@
 #include <string>
 #include <vector>
 
-namespace anpi {
-  
-  /**
+namespace anpi
+{
+
+/**
    * Two-dimensional plots
    *
    * Given a set of x coordinates and a corresponding set of y values,
@@ -32,60 +33,61 @@ namespace anpi {
    *
    * Finally, you call show() to display the window with all plotted curves.
    */
-  template<typename T>
-  class  Plot2d {
-  private:
-    //Titulo de la grafica.
-    std::string _title;
-    //Estiqueta del eje x
-    std::string _xlabel;
-    //Etiqueta del eje y
-    std::string _ylabel;
-    //Tamano de la cuadricula
-    T _sizeGrid;
-    
-  public:
-    /// Constructors
-    //@{
-    Plot2d();
-    ~Plot2d();
-    //@}
-   
-    /**
+template <typename T>
+class Plot2d
+{
+private:
+  //Titulo de la grafica.
+  std::string _title;
+  //Estiqueta del eje x
+  std::string _xlabel;
+  //Etiqueta del eje y
+  std::string _ylabel;
+  //Tamano de la cuadricula
+  T _sizeGrid;
+
+public:
+  /// Constructors
+  //@{
+  Plot2d();
+  ~Plot2d();
+  //@}
+
+  /**
      * Initialize a plot window.
      *
      * Each id is associated with a different plot window.
      */
-    void initialize();
+  void initialize();
 
-    /// Set plot title
-    void setTitle(const std::string& title);
+  /// Set plot title
+  void setTitle(const std::string &title);
 
-    /// Set label for the X axis
-    void setXLabel(const std::string& label);
-    /// Set label for the Y axis
-    void setYLabel(const std::string& label);
+  /// Set label for the X axis
+  void setXLabel(const std::string &label);
+  /// Set label for the Y axis
+  void setYLabel(const std::string &label);
 
-    /// Set the grid size
-    void setGridSize(const T sizegrid);
+  /// Set the grid size
+  void setGridSize(const T sizegrid);
 
-    /// Set initial and final limits of the X axis
-    void setXRange(const T xi,const T xs);
+  /// Set initial and final limits of the X axis
+  void setXRange(const T xi, const T xs);
 
-    /// Set initial and final limits of the Y axis
-    void setYRange(const T yi,const T ys);
+  /// Set initial and final limits of the Y axis
+  void setYRange(const T yi, const T ys);
 
-    /**
+  /**
      * Plot a curve by drawing line segments from
      * the sequence of points (datax[i],datay[i]).  The
      * curve will have the given legend 
      */
-    void plot(const std::vector<T>& datax,
-              const std::vector<T>& datay,
-              const std::string& legend,
-              const std::string& color="");
+  void plot(const std::vector<T> &datax,
+            const std::vector<T> &datay,
+            const std::string &legend,
+            const std::string &color = "");
 
-    /**
+  /**
      * Plot an area range between the min and max values
      * and the average data inbetween.
      * @param datax values of x
@@ -93,49 +95,43 @@ namespace anpi {
      * @param miny minimum values of y, corresponding to each x
      * @param maxy maximum values of y, corresponding to each x
      */
-    void plot(const std::vector<T>& datax,
-              const std::vector<T>& averagey,
-              const std::vector<T>& miny,
-              const std::vector<T>& maxy,
-              const std::string& legend,
-              const std::string& color="r");
+  void plot(const std::vector<T> &datax,
+            const std::vector<T> &averagey,
+            const std::vector<T> &miny,
+            const std::vector<T> &maxy,
+            const std::string &legend,
+            const std::string &color = "r");
 
-     /**
+  /**
      * Plot an area using quiver to print arrows
      * @param datax values of x
      * @param datay values of y 
      * @param datax values of u 
      * @param datav values of v
      */
-    void quiver(std::vector<T>& datax,
-                std::vector<T>& datay,
-                std::vector<T>& datau,
-                std::vector<T>& datav);
+  void quiver(std::vector<T> &datax,
+              std::vector<T> &datay,
+              std::vector<T> &datau,
+              std::vector<T> &datav);
 
-    
-    /**
+  void quiver(anpi::Matrix<T> &image);
+  /**
      * Plot a image using interpolation
      * the image comes as a matrix
      * @param Matrix of element
      */
 
+  void imgshow(anpi::Matrix<T> &);
 
-    void imgshow(anpi::Matrix<T>&);
-
-    
-    /**
+  /**
      * Show all curves plotted so far.
      */
-    void show();
+  void show();
 
-
-
-
-
-  }; //class Plot2d
+}; //class Plot2d
 
 } // namespace anpi
-  
+
 #include "PlotPy.tpp"
 
 #endif // PLOTPY_H

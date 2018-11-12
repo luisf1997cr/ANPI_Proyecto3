@@ -16,6 +16,7 @@
 #include "MatrixUtils.hpp"
 #include "utils.hpp"
 #include "PlotPy.hpp"
+#include <chrono>
 
 #include <boost/program_options.hpp>
 #include <boost/type_traits/is_complex.hpp>
@@ -250,10 +251,17 @@ int main(int argc, char *argv[])
 
       std::cout << "agarro isolate: " << vm["isolate"].as<std::string>() << std::endl;
     }
+
     /////////////////////////////////////////////LIEBAMN CALL///////////////////////////////////////
     //do the liebman calculations
     anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda);
+
+    auto t_start = std::chrono::high_resolution_clock::now();
     ls.lieb();
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double timeSec((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
+    std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
+
     // anpi::Matrix<double> m(v, h);
     // std::cout << "iterations: " << ls.liebman(m, top, bot, right, left)
     //           << std::endl;

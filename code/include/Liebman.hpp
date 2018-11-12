@@ -2,6 +2,7 @@
 #include "MatrixUtils.hpp"
 #include <cstdlib>
 #include <iostream>
+#include <chrono>
 
 namespace anpi
 {
@@ -22,6 +23,7 @@ struct Edge
 class LiebmnanSolver
 {
     const int MAX_ITER = 100;
+    const int MAX_MATRIX_GROWTH = 16;
     const double ERROR = 0.0001;
     const double LAMBDA = 1.37;
 
@@ -118,6 +120,8 @@ class LiebmnanSolver
             //calculata liebman for current matrix
             iterPerMatrix = liebman(currMatrix, currTop, currBot, currRight, currLeft);
 
+            // iterPerMatrix = liebmanOMP(currMatrix, currTop, currBot, currRight, currLeft);
+
             //print statistics
             std::cout << "\nMatrix number: " << totalMatrices << "  |  size:  " << currRows << "x" << currCols << "  |  used iterations: " << iterPerMatrix << std::endl;
 
@@ -163,9 +167,36 @@ class LiebmnanSolver
             }
             else
             {
-                fillBiggerTempMatrix(currMatrix, finalRows, finalCols);
-                currCols = finalCols;
-                currRows = finalRows;
+                //if the size difference is bigger than 64, then grow in a step of 64
+                // this value was obtained empirically by testing and seeing how the matrix behaved
+                //this is because of the way we expand the matrix, as an average cross
+                if (currCols + MAX_MATRIX_GROWTH < finalCols && currRows + MAX_MATRIX_GROWTH < finalRows)
+                {
+                    /* code */
+                    fillBiggerTempMatrix(currMatrix, currRows + MAX_MATRIX_GROWTH, currCols + MAX_MATRIX_GROWTH);
+                    currCols = currCols + MAX_MATRIX_GROWTH;
+                    currRows = currRows + MAX_MATRIX_GROWTH;
+                }
+                else if (currCols + MAX_MATRIX_GROWTH < finalCols)
+                {
+                    fillBiggerTempMatrix(currMatrix, currRows, currCols + MAX_MATRIX_GROWTH);
+                    currCols = currCols + MAX_MATRIX_GROWTH;
+                    // currRows = currRows + MAX_MATRIX_GROWTH;
+                }
+                else if (currRows + MAX_MATRIX_GROWTH < finalRows)
+                {
+                    fillBiggerTempMatrix(currMatrix, currRows + MAX_MATRIX_GROWTH, currCols);
+                    // currCols = currCols + MAX_MATRIX_GROWTH;
+                    currRows = currRows + MAX_MATRIX_GROWTH;
+                }
+                else
+                {
+                    /* code */
+                    fillBiggerTempMatrix(currMatrix, finalRows, finalCols);
+                    currCols = finalCols;
+                    currRows = finalRows;
+                }
+
                 // if (currCols + 2 > finalCols || currRows + 2 > finalRows)
                 // {
                 //     growOneMatrix(currMatrix);
@@ -558,6 +589,394 @@ class LiebmnanSolver
         return iterations;
     }
 
+    int liebmanOMP(Matrix<double> &temperatureMatrix, Edge top, Edge bottom, Edge right, Edge left)
+    {
+        int iterations = 0;
+        int rows = temperatureMatrix.rows();
+        int cols = temperatureMatrix.cols();
+
+        //if Matrix of size 1
+        if (rows == 1 && cols == 1)
+        {
+            bool tbIsolated = false;
+            bool lrIsolated = false;
+            double tt, bt, lt, rt;
+
+            //if one of the sides is isolated
+            if ((top.isolated || bottom.isolated || right.isolated || left.isolated))
+            {
+                //top isolated
+                if (top.isolated)
+                {
+                    if (bottom.isolated)
+                    {
+                        // tt = 0;
+                        // bt = 0;
+                        tbIsolated = true;
+                    }
+                    else
+                    {
+                        tt = bottom.temperatures[0];
+                        bt = bottom.temperatures[0];
+                    }
+                }
+                //bottom isolated
+                else if (bottom.isolated)
+                {
+
+                    tt = top.temperatures[0];
+                    bt = top.temperatures[0];
+                }
+                else
+                {
+                    tt = top.temperatures[0];
+                    bt = bottom.temperatures[0];
+                }
+
+                //right isolated
+                if (right.isolated)
+                {
+                    if (left.isolated)
+                    {
+                        lrIsolated = true;
+                    }
+                    else
+                    {
+                        rt = left.temperatures[0];
+                        lt = left.temperatures[0];
+                    }
+                }
+                //left isolated
+                else if (left.isolated)
+                {
+                    lt = right.temperatures[0];
+                    rt = right.temperatures[0];
+                }
+                else
+                {
+                    rt = right.temperatures[0];
+                    lt = left.temperatures[0];
+                }
+            }
+            else
+            {
+                tt = bottom.temperatures[0];
+                bt = bottom.temperatures[0];
+                rt = right.temperatures[0];
+                lt = left.temperatures[0];
+            }
+
+            //if the plaque is completely isolated
+            if (lrIsolated && tbIsolated)
+            {
+                temperatureMatrix[0][0] = 0;
+            }
+            //both sides isolated
+            else if (lrIsolated)
+            {
+                temperatureMatrix[0][0] = (tt + bt) / 2;
+            }
+            //top and bottom isolated
+            else if (tbIsolated)
+            {
+                temperatureMatrix[0][0] = (rt + lt) / 2;
+            }
+            //calculate normally
+            else
+            {
+                temperatureMatrix[0][0] = (rt + lt + tt + bt) / 4;
+            }
+            //no need to iterate, will always get the same result
+            return 1;
+        } //end of matrix size 1
+          //////////////////////////////////////////////////////////////////////////////////////////
+
+        double parallelError, localError, bigTemp; //, oldBigTemp;
+
+        double currTemp, calcTemp; //, calcError;
+        do
+        {
+            parallelError = 0;
+
+#pragma omp parallel shared(parallelError) private(calcTemp, currTemp, localError, bigTemp)
+            {
+                localError = 0;
+                bigTemp = 0;
+#pragma omp for
+                //iterate through rows
+                for (int i = 0; i < rows; ++i)
+                {
+                    //iterate through columns
+                    for (int j = 0; j < cols; ++j)
+                    {
+
+                        currTemp = temperatureMatrix[i][j];
+
+                        //////////////////////////////////top check///////////////////////////////////////////
+                        //if on the top
+                        if (i == 0)
+                        {
+
+                            //if on the left corner
+                            if (j == 0)
+                            {
+                                //if top is isolated
+                                if (top.isolated)
+                                {
+
+                                    //if left is also isolated
+                                    if (left.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i + 1][j] + 2 * temperatureMatrix[i][j + 1]) / 4;
+                                    }
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i + 1][j] + temperatureMatrix[i][j + 1] + left.temperatures[i]) / 4;
+                                    }
+                                }
+                                //top not isolated
+                                else
+                                {
+                                    //if left is isolated
+                                    if (left.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i + 1][j] + top.temperatures[j] + 2 * temperatureMatrix[i][j + 1]) / 4;
+                                    }
+                                    //neither is isolated
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i + 1][j] + top.temperatures[j] + temperatureMatrix[i][j + 1] + left.temperatures[i]) / 4;
+                                    }
+                                }
+                            }
+
+                            //if on the right corner
+                            else if (j == cols - 1)
+                            {
+                                //if top is isolated
+                                if (top.isolated)
+                                {
+
+                                    //if right is also isolated
+                                    if (right.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i + 1][j] + 2 * temperatureMatrix[i][j - 1]) / 4;
+                                    }
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i + 1][j] + temperatureMatrix[i][j - 1] + right.temperatures[i]) / 4;
+                                    }
+                                }
+                                //top not isolated
+                                else
+                                {
+                                    //if right is isolated
+                                    if (right.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i + 1][j] + top.temperatures[j] + 2 * temperatureMatrix[i][j - 1]) / 4;
+                                    }
+                                    //neither is isolated
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i + 1][j] + top.temperatures[j] + temperatureMatrix[i][j - 1] + right.temperatures[i]) / 4;
+                                    }
+                                }
+                            }
+                            //other parts of the top
+                            else
+                            {
+                                if (top.isolated)
+                                {
+                                    //calculate temperature
+                                    calcTemp = (2 * temperatureMatrix[i + 1][j] + temperatureMatrix[i][j - 1] + temperatureMatrix[i][j + 1]) / 4;
+                                }
+                                else
+                                {
+                                    //calculate temperature
+                                    calcTemp = (temperatureMatrix[i + 1][j] + top.temperatures[j] + temperatureMatrix[i][j - 1] + temperatureMatrix[i][j + 1]) / 4;
+                                }
+                            }
+                        }
+
+                        //////////////////////////////////bottom check///////////////////////////////////////////
+                        //if at the bottom
+                        else if (i == rows - 1)
+                        {
+                            //if on the left corner
+                            if (j == 0)
+                            {
+                                //if bottom is isolated
+                                if (bottom.isolated)
+                                {
+                                    //if left is also isolated
+                                    if (left.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i - 1][j] + 2 * temperatureMatrix[i][j + 1]) / 4;
+                                    }
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i - 1][j] + temperatureMatrix[i][j + 1] + left.temperatures[i]) / 4;
+                                    }
+                                }
+                                //bottom not isolated
+                                else
+                                {
+                                    //if left is isolated
+                                    if (left.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i - 1][j] + bottom.temperatures[j] + 2 * temperatureMatrix[i][j + 1]) / 4;
+                                    }
+                                    //neither is isolated
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i - 1][j] + bottom.temperatures[j] + temperatureMatrix[i][j + 1] + left.temperatures[i]) / 4;
+                                    }
+                                }
+                            }
+                            //if on the right corner
+                            else if (j == cols - 1)
+                            {
+                                //if bottom is isolated
+                                if (bottom.isolated)
+                                {
+                                    //if right is also isolated
+                                    if (right.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i - 1][j] + 2 * temperatureMatrix[i][j - 1]) / 4;
+                                    }
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (2 * temperatureMatrix[i - 1][j] + temperatureMatrix[i][j + 1] + right.temperatures[i]) / 4;
+                                    }
+                                }
+                                //bottom not isolated
+                                else
+                                {
+                                    //if right is isolated
+                                    if (right.isolated)
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i - 1][j] + bottom.temperatures[j] + 2 * temperatureMatrix[i][j - 1]) / 4;
+                                    }
+                                    //neither is isolated
+                                    else
+                                    {
+                                        //calculate temperature
+                                        calcTemp = (temperatureMatrix[i - 1][j] + bottom.temperatures[j] + temperatureMatrix[i][j + 1] + right.temperatures[i]) / 4;
+                                    }
+                                }
+                            }
+                            //other parts of the bottom
+                            else
+                            {
+                                if (bottom.isolated)
+                                {
+                                    //calculate temperature
+                                    calcTemp = (2 * temperatureMatrix[i - 1][j] + temperatureMatrix[i][j - 1] + temperatureMatrix[i][j + 1]) / 4;
+                                }
+                                else
+                                {
+                                    //calculate temperature
+                                    calcTemp = (temperatureMatrix[i - 1][j] + bottom.temperatures[j] + temperatureMatrix[i][j - 1] + temperatureMatrix[i][j + 1]) / 4;
+                                }
+                            }
+                        }
+
+                        //corners were checked when calculating top and bottom
+
+                        //////////////////////////////////left check///////////////////////////////////////////
+                        //if on the left side non corner
+                        else if (j == 0)
+                        {
+                            if (left.isolated)
+                            {
+                                //calculate temperature
+                                calcTemp = (2 * temperatureMatrix[i][j + 1] + temperatureMatrix[i + 1][j] + temperatureMatrix[i - 1][j]) / 4;
+                            }
+                            else
+                            {
+                                //calculate temperature
+                                calcTemp = (temperatureMatrix[i + 1][j] + temperatureMatrix[i - 1][j] + left.temperatures[i] + temperatureMatrix[i][j + 1]) / 4;
+                            }
+                        }
+
+                        //////////////////////////////////right check///////////////////////////////////////////
+                        //if on the right side non corner
+                        else if (j == cols - 1)
+                        {
+                            if (right.isolated)
+                            {
+                                //calculate temperature
+                                calcTemp = (2 * temperatureMatrix[i][j - 1] + temperatureMatrix[i + 1][j] + temperatureMatrix[i - 1][j]) / 4;
+                            }
+                            else
+                            {
+                                //calculate temperature
+                                calcTemp = (temperatureMatrix[i + 1][j] + temperatureMatrix[i - 1][j] + right.temperatures[i] + temperatureMatrix[i][j - 1]) / 4;
+                            }
+                        }
+
+                        //////////////////////////////////other cells///////////////////////////////////////////
+                        //every other cell
+                        else
+                        {
+                            //calculate temperature
+                            calcTemp = (temperatureMatrix[i + 1][j] + temperatureMatrix[i - 1][j] + temperatureMatrix[i][j + 1] + temperatureMatrix[i][j - 1]) / 4;
+                        }
+
+                        //apply relaxation
+                        calcTemp = lambda * calcTemp + (1 - lambda) * currTemp;
+                        //set the new temperture
+                        temperatureMatrix[i][j] = calcTemp;
+
+                        //check if the new calculated temp is the biggest to compare for error
+                        if (std::abs(calcTemp) > bigTemp)
+                        {
+                            bigTemp = std::abs(calcTemp);
+                            // oldBigTemp = std::abs(currTemp);
+                            localError = (std::abs(calcTemp) - std::abs(currTemp)) / std::abs(calcTemp) * 100;
+                            // bigTempOld = std::abs(currTemp);
+                        }
+
+                    } //end for column
+                }     //end for row
+                      //////////////////////////////////end matrix iteration///////////////////////////////////////////
+
+#pragma omp critical
+                {
+                    if (parallelError < localError)
+                    {
+                        parallelError = localError;
+                    }
+                }
+            }
+            //end PARALELL section
+
+            ++iterations;
+
+            //calculate error of the biggest temperature
+
+            // calcError = (std::abs(parallelError)) * 100;
+
+        } while (parallelError > error);
+
+        return iterations;
+    }
+
     void duplicateTempMatrix(Matrix<double> &tempMatrix)
     {
         int scols = tempMatrix.cols();
@@ -614,6 +1033,8 @@ class LiebmnanSolver
 
         // duplicate by copying
         // int bigI, bigJ;
+
+#pragma omp parallel for collapse(2) private(bigI, bigJ)
         for (int i = 0; i < srows; ++i)
             for (int j = 0; j < scols; ++j)
             {
@@ -636,6 +1057,7 @@ class LiebmnanSolver
         Matrix<double> big(brows, bcols);
 
         int bigI, bigJ;
+#pragma omp parallel for private(bigI, bigJ) collapse(2)
         for (int i = 0; i < srows; ++i)
             for (int j = 0; j < scols; ++j)
             {
@@ -644,8 +1066,10 @@ class LiebmnanSolver
                 big[bigI][bigJ] = tempMatrix[i][j];
                 big[bigI][bigJ + 1] = tempMatrix[i][j];
             }
+
         tempMatrix = big;
     }
+
     void duplicateHeightTempMatrix(Matrix<double> &tempMatrix)
     {
         int scols = tempMatrix.cols();
@@ -654,16 +1078,21 @@ class LiebmnanSolver
         int brows = srows * 2;
 
         Matrix<double> big(brows, bcols);
-
         int bigI, bigJ;
-        for (int i = 0; i < srows; ++i)
-            for (int j = 0; j < scols; ++j)
-            {
-                bigI = i * 2;
-                bigJ = j;
-                big[bigI][bigJ] = tempMatrix[i][j];
-                big[bigI + 1][bigJ] = tempMatrix[i][j];
-            }
+
+        // #pragma omp parallel private(i, j, bigI, bigJ)
+        {
+#pragma omp for collapse(2) private(bigI, bigJ)
+            for (int i = 0; i < srows; ++i)
+                for (int j = 0; j < scols; ++j)
+                {
+                    bigI = i * 2;
+                    bigJ = j;
+                    big[bigI][bigJ] = tempMatrix[i][j];
+                    big[bigI + 1][bigJ] = tempMatrix[i][j];
+                }
+        }
+
         tempMatrix = big;
     }
 
@@ -683,6 +1112,7 @@ class LiebmnanSolver
         //     }
 
         //growing from the inside like a cross, using the average of the side cells as the new temp
+        // #pragma omp parallel for
         for (int is = 0, ib = 0; is < srows; ++is, ++ib)
         {
             for (int js = 0, jb = 0; js < scols; ++js, ++jb)
@@ -808,7 +1238,7 @@ class LiebmnanSolver
         //         big[i][j] = small[i - 1][j - 1];
         //     }
         // big.fill(small);
-        big.DumpToFile("UltimaCrecidaenUno.txt");
+        // big.DumpToFile("UltimaCrecidaenUno.txt");
         small = big;
     }
 
@@ -838,6 +1268,8 @@ class LiebmnanSolver
         Matrix<double> big(rows, cols);
 
         //growing from the inside like a cross, using the average of the side cells as the new temp
+
+        // #pragma omp parallel for
         for (int is = 0, ib = 0; is < srows; ++is, ++ib)
         {
             for (int js = 0, jb = 0; js < scols; ++js, ++jb)
