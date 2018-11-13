@@ -109,10 +109,10 @@ public:
      * @param datax values of u 
      * @param datav values of v
      */
-  void quiver(std::vector<T> &datax,
-              std::vector<T> &datay,
-              std::vector<T> &datau,
-              std::vector<T> &datav);
+  //void quiver(std::vector<T> &datax,
+  //            std::vector<T> &datay,
+  //            std::vector<T> &datau,
+  //            std::vector<T> &datav);
 
   void quiver(anpi::Matrix<T> &image);
   /**

@@ -141,6 +141,10 @@ bool readTempFile(std::string filename, Edge &top, Edge &bottom, Edge &right, Ed
 * @param SizeVecBordes
 * @param VecTemperaturas
 * @param VecBordesValues
+<<<<<<< HEAD
+*/
+
+=======
 // */
 // template <typename T>
 // void obtainVecBordesValues(const int SizeVecBordes,
@@ -174,6 +178,7 @@ bool readTempFile(std::string filename, Edge &top, Edge &bottom, Edge &right, Ed
 //         std::cout << "border isolated \n";
 //     }
 // }
+>>>>>>> bb9bba5910d7b98728593a550b0bbbd77703c707
 } // namespace anpi
 
 #endif

@@ -18,6 +18,7 @@
 #include "PlotPy.hpp"
 #include <chrono>
 #include <fstream>
+#include "Spline.hpp"
 
 #include <boost/program_options.hpp>
 #include <boost/type_traits/is_complex.hpp>
@@ -198,6 +199,7 @@ int main(int argc, char *argv[])
       std::vector<double> temps = vm["top"].as<std::vector<double>>();
       if (temps.size() > 2)
       {
+        //spline<T>(SizeVecBordes, VecTemperaturas, VecBordesValues);
         std::cout << " Error in top temperatures: Cannot have more than 2 values will use only first two" << std::endl;
       }
       if (temps.size() == 1)
@@ -350,19 +352,22 @@ int main(int argc, char *argv[])
 
     //show color visuals
 
-    if (vm.count("flux"))
-    {
-    }
-    if (vm.count("grid"))
-    {
-    }
-
     //show visual grid
     anpi::Plot2d<double> plotter;
     plotter.initialize();
     std::string title = "Matriz de ";
     title.append(std::to_string(v) + std::string("x")).append(std::to_string(h));
     plotter.imgshow(ls.tempsMatrix, title);
+    
+
+    if (vm.count("flux"))
+    {
+      plotter.quiver(ls.tempsMatrix);
+    }
+    if (vm.count("grid"))
+    {
+    }
+
     plotter.show();
 
     return EXIT_SUCCESS;
