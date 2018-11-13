@@ -64,20 +64,20 @@
 // typedef anpi::Matrix<int, aralloc> arimatrix;
 
 // #if 1
-// #define dispatchTest(func) \
-//   func<cmatrix>();         \
-//   func<dmatrix>();         \
-//   func<fmatrix>();         \
-//   func<imatrix>();         \
-//                            \
-//   func<acmatrix>();        \
-//   func<admatrix>();        \
-//   func<afmatrix>();        \
-//   func<aimatrix>();        \
-//                            \
-//   func<arcmatrix>();       \
-//   func<ardmatrix>();       \
-//   func<arfmatrix>();       \
+// #define dispatchTest(func)
+//   func<cmatrix>();
+//   func<dmatrix>();
+//   func<fmatrix>();
+//   func<imatrix>();
+//
+//   func<acmatrix>();
+//   func<admatrix>();
+//   func<afmatrix>();
+//   func<aimatrix>();
+//
+//   func<arcmatrix>();
+//   func<ardmatrix>();
+//   func<arfmatrix>();
 //   func<arimatrix>();
 
 // #else
