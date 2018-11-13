@@ -40,11 +40,14 @@ template <typename T>
 void Plot2d<T>::quiver(anpi::Matrix<T> &image)
 {
 
-  std::string imageStr = "image" + " = np.array([";
+  std::string c=',';
+  std::string imageStr = "image";
+  imageStr.append( " = np.array([");
         for (int i = 0; i < image.rows(); ++i) {
             imageStr.append("[");
             for (int j = 0; j < image.cols(); ++j) {
-                imageStr.append(std::to_string(image[i][j]) + ",");
+                imageStr.append(std::to_string(image[i][j]));
+                imageStr.append(" ,");
             }
             imageStr.append("],");
         }
