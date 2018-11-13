@@ -1,3 +1,17 @@
+/**
+ * @file Liebman.hpp
+ * @author Jorge Agüero
+ * @brief Liebman Solver to calclute the horizontal and vertical temperature flux on a metal plaque g
+ * @version 0.1
+ * @date 2018-11-12
+ * 
+ * @copyright Copyright (c) 2018
+ * 
+ */
+
+#ifndef LIEBMAN_HPP
+#define LIEBMAN_HPP
+
 #include "Matrix.hpp"
 #include "MatrixUtils.hpp"
 #include <cstdlib>
@@ -26,14 +40,15 @@ struct Edge
 
 /**
  * 
- * @brief CLass that solves and contains solution
+ * @brief CLass that solves and contains solution for the heat plaque
  * 
  * 
  */
 class LiebmnanSolver
 {
+
     const int MAX_ITER = 100;
-    const int MAX_MATRIX_GROWTH = 2;
+    const int MAX_MATRIX_GROWTH = 10000;
     const double ERROR = 0.001;
     const double LAMBDA = 1.37;
 
@@ -41,6 +56,8 @@ class LiebmnanSolver
     double error;
     double lambda;
     int height, width;
+    bool parallelized = true;
+    bool simpleLiebman = false;
 
   public:
     Matrix<double> tempsMatrix;
@@ -51,6 +68,11 @@ class LiebmnanSolver
      */
     LiebmnanSolver();
 
+    /**
+ * @brief Constructs a solver given the different edge temperatures Uses the top and right side sizes to know
+ *  what is the size of the matrix to create
+ * 
+ */
     LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp) //, Matrix<double> &temps)
     {
         top = toptemp;
@@ -63,7 +85,10 @@ class LiebmnanSolver
         error = ERROR;
         lambda = LAMBDA;
     }
-
+    /**
+ * @brief Constructs a solver given the different edge temperatures, and a final size of the matrix 
+ * 
+ */
     LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize) //, Matrix<double> &temps)
     {
         top = toptemp;
@@ -76,6 +101,11 @@ class LiebmnanSolver
         error = ERROR;
         lambda = LAMBDA;
     }
+
+    /**
+     * @brief Constructs a solver given the different edge temperatures, a final size of the matrix, and the error desired to use for calculation
+     * 
+     */
     LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror) //, Matrix<double> &temps)
     {
         top = toptemp;
@@ -88,6 +118,11 @@ class LiebmnanSolver
         error = inerror;
         lambda = LAMBDA;
     }
+
+    /**
+     * @brief Constructs a solver given the different edge temperatures, a final size of the matrix, the error to use for calculation and the lambda used for relaxation (between 1 and 2)
+     * 
+     */
     LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror, double inlambda) //, Matrix<double> &temps)
     {
         top = toptemp;
@@ -101,25 +136,85 @@ class LiebmnanSolver
         lambda = inlambda;
     }
 
-    int lieb()
+    /**
+     * @brief Constructs a solver given the different edge temperatures, a final size of the matrix, the error to use for calculation, the lambda used for relaxation (between 1 and 2), and wether the calculations should be parallelized
+     * 
+     */
+    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror, double inlambda, bool parallel) //, Matrix<double> &temps)
     {
+        top = toptemp;
+        bottom = botttemp;
+        right = rightemp;
+        left = leftemp;
+        height = vsize;
+        width = hsize;
+        // tempsMatrix = temps;
+        error = inerror;
+        lambda = inlambda;
+        parallelized = parallel;
+    }
+
+    /**
+     * @brief Constructs a solver given the different edge temperatures, a final size of the matrix, the error to use for calculation, the lambda used for relaxation (between 1 and 2), and wether the calculations should be parallelized
+     * 
+     */
+    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror, double inlambda, bool parallel, bool simpleLieb) //, Matrix<double> &temps)
+    {
+        top = toptemp;
+        bottom = botttemp;
+        right = rightemp;
+        left = leftemp;
+        height = vsize;
+        width = hsize;
+        // tempsMatrix = temps;
+        error = inerror;
+        lambda = inlambda;
+        parallelized = parallel;
+        simpleLiebman = simpleLieb;
+    }
+
+    /**
+ * @brief Calculates the Liebman method growing the matrix in size in order to reduce  the numbe of iterations required for big matrices
+ * 
+ * @return double The time in seconds that it took to complete
+ */
+    double lieb()
+    {
+        if (simpleLiebman)
+        {
+            Matrix<double> currMatrix(height, width);
+
+            double timeSec;
+            auto t_start = std::chrono::high_resolution_clock::now();
+            if (parallelized)
+                std::cout << "\nIterations used: " << liebmanOMP(currMatrix, top, bottom, right, left) << std::endl;
+            else
+                std::cout << "\nIterations used: " << liebman(currMatrix, top, bottom, right, left) << std::endl;
+
+            auto t_end = std::chrono::high_resolution_clock::now();
+            timeSec = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
+
+            tempsMatrix = currMatrix;
+            return timeSec;
+        }
+
         int finalRows, finalCols, currRows, currCols,
             totalMatrices, iterPerMatrix;
         finalRows = height;
         finalCols = width;
+        //Edge temperatures
+        Edge currTop, currBot, currLeft, currRight;
 
+        double timeSec;
+        auto t_start = std::chrono::high_resolution_clock::now();
         //start with a size 1 matrix
         Matrix<double> currMatrix(1, 1);
         currCols = 1;
         currRows = 1;
         totalMatrices = 1;
 
-        Edge currTop, currBot, currLeft, currRight;
-
         while (true)
         {
-            // currCols = currMatrix.cols();
-            // currRows = currMatrix.rows();
 
             //creates temperature vector the size of the matrix we are calculating
             currTop = averageEdgeTemp(top, currCols);
@@ -127,10 +222,12 @@ class LiebmnanSolver
             currLeft = averageEdgeTemp(left, currRows);
             currRight = averageEdgeTemp(right, currRows);
 
-            //calculata liebman for current matrix
-            iterPerMatrix = liebman(currMatrix, currTop, currBot, currRight, currLeft);
+            //calculate liebman for current matrix
 
-            // iterPerMatrix = liebmanOMP(currMatrix, currTop, currBot, currRight, currLeft);
+            if (parallelized)
+                iterPerMatrix = liebmanOMP(currMatrix, currTop, currBot, currRight, currLeft);
+            else
+                iterPerMatrix = liebman(currMatrix, currTop, currBot, currRight, currLeft);
 
             //print statistics
             std::cout << "\nMatrix number: " << totalMatrices << "  |  size:  " << currRows << "x" << currCols << "  |  used iterations: " << iterPerMatrix << std::endl;
@@ -141,18 +238,6 @@ class LiebmnanSolver
                 tempsMatrix = currMatrix;
                 break;
             }
-
-            // if (currCols + 2 > finalCols || currRows + 2 > finalRows)
-            // {
-            //     growOneMatrix(currMatrix);
-            // }
-            // else
-            // {
-            //     growMatrix(currMatrix);
-            // }
-
-            // currCols = currMatrix.cols();
-            // currRows = currMatrix.rows();
 
             //else we grow the temperature matrix and calculate liebman again
 
@@ -177,7 +262,7 @@ class LiebmnanSolver
             }
             else
             {
-                //if the size difference is bigger than 64, then grow in a step of 64
+                // if the size difference is bigger than a maximun widht, then grow in a step of 64
                 // this value was obtained empirically by testing and seeing how the matrix behaved
                 //this is because of the way we expand the matrix, as an average cross
                 if (currCols + MAX_MATRIX_GROWTH < finalCols && currRows + MAX_MATRIX_GROWTH < finalRows)
@@ -206,30 +291,30 @@ class LiebmnanSolver
                     currCols = finalCols;
                     currRows = finalRows;
                 }
-
-                // if (currCols + 2 > finalCols || currRows + 2 > finalRows)
-                // {
-                //     growOneMatrix(currMatrix);
-                //     currCols += 1;
-                //     currRows += 1;
-                // }
-                // else
-                // {
-                //     growMatrix(currMatrix);
-                //     currCols += 2;
-                //     currRows += 2;
-                // }
             }
 
             ++totalMatrices;
-            currMatrix.DumpToFile("currMatrix.txt");
-        }
+            // currMatrix.DumpToFile("currMatrix.txt");
+        } //end of while
+
+        auto t_end = std::chrono::high_resolution_clock::now();
+        timeSec = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
 
         std::cout << "\nMatrices created: " << totalMatrices << std::endl;
+
         //initial step Matrix size 1
-        return totalMatrices;
+        return timeSec;
     }
 
+    /**
+ * @brief Calculates the temperature flow in a plaque using the Liebman algorithm given an initial temperature matrix and the temperature at the edges
+ * 
+ * @param top The top temperatures, given as an Edge vector of the same size as bottom and the matrix width
+ * @param bottom The bottom temperatures, given as an Edge vector of the same size as top and the matrix width
+ * @param right The right temperatures, given as an Edge vector of the same size as left and the matrix height
+ * @param left The left temperatures, given as an Edge vector of the same size as right and the matrix height
+ * @return int The amount of iterations it took to complete calculations
+ */
     int liebman(Matrix<double> &temperatureMatrix, Edge top, Edge bottom, Edge right, Edge left)
     {
         int iterations = 0;
@@ -336,9 +421,9 @@ class LiebmnanSolver
         double currTemp, calcTemp, calcError;
         do
         {
-            // bigTemp = 0;
-            // bigTempOld = 0;
+            //holds the value of the biggest difference (error) calculated
             bigerror = 0;
+
             //iterate through rows
             for (int i = 0; i < rows; ++i)
             {
@@ -580,7 +665,8 @@ class LiebmnanSolver
                     temperatureMatrix[i][j] = calcTemp;
 
                     //calculate the error
-                    calcError = std::abs(std::abs(calcTemp) - std::abs(currTemp)) / std::abs(calcTemp) * 100;
+                    // calcError = std::abs(std::abs(calcTemp) - std::abs(currTemp)) / std::abs(calcTemp) * 100;
+                    calcError = std::abs(calcTemp - currTemp);
 
                     //check if the new calculated error is the biggest to compare
                     if (calcError > bigerror)
@@ -601,6 +687,16 @@ class LiebmnanSolver
         return iterations;
     }
 
+    /**
+ * @brief Calculates the temperature flow in a plaque using the Liebman algorithm, and using openMP directives to paralelize the computation
+ * 
+ * @param temperatureMatrix The intial temperature matrix used to calculate the new temperatures, the values of the matrix are updated with the new values
+ * @param top The top temperatures, given as an Edge vector of the same size as bottom and the matrix width
+ * @param bottom The bottom temperatures, given as an Edge vector of the same size as top and the matrix width
+ * @param right The right temperatures, given as an Edge vector of the same size as left and the matrix height
+ * @param left The left temperatures, given as an Edge vector of the same size as right and the matrix height
+ * @return int The amount of iterations it took to complete calculations
+ */
     int liebmanOMP(Matrix<double> &temperatureMatrix, Edge top, Edge bottom, Edge right, Edge left)
     {
         int iterations = 0;
@@ -703,18 +799,19 @@ class LiebmnanSolver
         } //end of matrix size 1
           //////////////////////////////////////////////////////////////////////////////////////////
 
-        double parallelError, localError, bigTemp; //, oldBigTemp;
+        double parallelError, localError, bigError; //, oldbigError;
 
         double currTemp, calcTemp; //, calcError;
         do
         {
+
             parallelError = 0;
 
-#pragma omp parallel shared(parallelError) private(calcTemp, currTemp, localError, bigTemp)
+#pragma omp parallel private(calcTemp, currTemp, localError, bigError)
             {
                 localError = 0;
-                bigTemp = 0;
-#pragma omp for
+                bigError = 0;
+#pragma omp for collapse(2)
                 //iterate through rows
                 for (int i = 0; i < rows; ++i)
                 {
@@ -955,24 +1052,24 @@ class LiebmnanSolver
                         //set the new temperture
                         temperatureMatrix[i][j] = calcTemp;
 
+                        localError = std::abs(calcTemp - currTemp);
+
                         //check if the new calculated temp is the biggest to compare for error
-                        if (std::abs(calcTemp) > bigTemp)
+                        if (localError > bigError)
                         {
-                            bigTemp = std::abs(calcTemp);
-                            // oldBigTemp = std::abs(currTemp);
-                            localError = (std::abs(calcTemp) - std::abs(currTemp)) / std::abs(calcTemp) * 100;
-                            // bigTempOld = std::abs(currTemp);
+                            bigError = localError;
                         }
 
                     } //end for column
                 }     //end for row
                       //////////////////////////////////end matrix iteration///////////////////////////////////////////
 
+//runs for every thread, lloks for the highest error found by each thread
 #pragma omp critical
                 {
-                    if (parallelError < localError)
+                    if (parallelError < bigError)
                     {
-                        parallelError = localError;
+                        parallelError = bigError;
                     }
                 }
             }
@@ -989,6 +1086,11 @@ class LiebmnanSolver
         return iterations;
     }
 
+    /**
+ * @brief Duplicates The size of the matrix and copies each value into 4 cells of the new matrix. Uses  openMP to paralelize the duplication
+ * 
+ * @param tempMatrix The matrix to duplicate
+ */
     void duplicateTempMatrix(Matrix<double> &tempMatrix)
     {
         int scols = tempMatrix.cols();
@@ -999,52 +1101,6 @@ class LiebmnanSolver
         Matrix<double> big(brows, bcols);
         bigI = 0;
         bigJ = 0;
-
-        // fill outer sides of matrix
-        // for (int i = 0; i < srows / 2; ++i)
-        // {
-        //     for (int j = 0; j < scols / 2; ++j)
-        //     {
-        //         big[bigI][bigJ] = tempMatrix[i][j];
-        //         ++bigJ;
-        //     }
-        //     ++bigI;
-        //     bigJ = 0;
-        // }
-        // bigJ += srows;
-        // bigJ = (scols / 2) + scols;
-
-        // for (int i = srows / 2; i < srows; ++i)
-        // {
-        //     for (int j = scols / 2; j < scols; ++j)
-        //     {
-        //         big[bigI][bigJ] = tempMatrix[i][j];
-        //         ++bigJ;
-        //     }
-        //     ++bigI;
-        //     bigJ = (scols / 2) + scols;
-        // }
-
-        // duplicate with matrix at it's center
-
-        // bigI = srows / 2;
-        // bigJ = scols / 2;
-
-        // for (int i = 0; i < srows; ++i)
-        // {
-        //     for (int j = 0; j < scols; ++j)
-        //     {
-        //         big[bigI][bigJ] = tempMatrix[i][j];
-        //         ++bigJ;
-        //     }
-        //     ++bigI;
-        //     bigJ = scols / 2;
-        // }
-        // // anpi::printMatrix(big);
-        // big.DumpToFile("ultimaDuplicada.txt");
-
-        // duplicate by copying
-        // int bigI, bigJ;
 
 #pragma omp parallel for collapse(2) private(bigI, bigJ)
         for (int i = 0; i < srows; ++i)
@@ -1060,6 +1116,12 @@ class LiebmnanSolver
 
         tempMatrix = big;
     }
+
+    /**
+     * @brief Duplicates The width of a given matrix copies each value into 2 other horizontal values of the new matrix. Uses  openMP to paralelize the duplication
+     * 
+     * @param tempMatrix The matrix to duplicate
+     */
     void duplicateWidthTempMatrix(Matrix<double> &tempMatrix)
     {
         int scols = tempMatrix.cols();
@@ -1082,6 +1144,11 @@ class LiebmnanSolver
         tempMatrix = big;
     }
 
+    /**
+     * @brief Duplicates the height of a given matrix copies each value into 2 other vertical values of the new matrix. Uses  openMP to paralelize the duplication
+     * 
+     * @param tempMatrix 
+     */
     void duplicateHeightTempMatrix(Matrix<double> &tempMatrix)
     {
         int scols = tempMatrix.cols();
@@ -1108,157 +1175,8 @@ class LiebmnanSolver
         tempMatrix = big;
     }
 
-    void growMatrix(Matrix<double> &small)
-    {
-        int scols = small.cols();
-        int srows = small.rows();
-        int bcols = scols + 2;
-        int brows = srows + 2;
-
-        Matrix<double> big(brows, bcols);
-
-        // for (int i = 1; i <= srows; ++i)
-        //     for (int j = 1; j <= scols; ++j)
-        //     {
-        //         big[i][j] = small[i - 1][j - 1];
-        //     }
-
-        //growing from the inside like a cross, using the average of the side cells as the new temp
-        // #pragma omp parallel for
-        for (int is = 0, ib = 0; is < srows; ++is, ++ib)
-        {
-            for (int js = 0, jb = 0; js < scols; ++js, ++jb)
-            {
-                //if on the middle horizontal band
-                if (is == srows / 2)
-                {
-                    // if on the middle square
-                    if (js == scols / 2)
-                    {
-
-                        // big[ib][jb] = small[is][js];
-
-                        //all central square with same value
-                        big[ib][jb] = big[ib][jb + 1] = big[ib + 1][jb] = big[ib + 1][jb + 1] = (small[is][js - 1] + small[is - 1][js] + small[is][js] + small[is - 1][js - 1]) / 4;
-
-                        // big[ib][jb + 1] = (small[is][js] + small[is - 1][js]) / 2;
-
-                        // big[ib + 1][jb] = (small[is][js - 1] + small[is + 1][js]) / 2;
-                        // big[ib + 1][jb + 1] = (small[is][js] + small[is + 1][js]) / 2;
-
-                        // set the lower squares
-                        big[ib + 2][jb] = big[ib + 2][jb + 1] = (small[is][js] + small[is][js - 1]) / 2;
-                        jb += 2;
-
-                        big[ib][jb] = big[ib + 1][jb] = (small[is][js] + small[is - 1][js]) / 2;
-
-                        big[ib + 2][jb] = small[is][js];
-                    }
-
-                    else
-                    {
-
-                        // big[ib][jb] = small[is][js];
-                        big[ib][jb] = big[ib + 1][jb] = (small[is][js] + small[is - 1][js]) / 2;
-                        big[ib + 2][jb] = small[is][js];
-                        // ib += 2;
-                    }
-                }
-
-                //if on the middle vertical band
-                else if (js == scols / 2)
-                {
-
-                    // big[ib][jb] = small[is][js];
-                    big[ib][jb] = big[ib][jb + 1] = (small[is][js] + small[is][js - 1]) / 2;
-                    jb += 2;
-
-                    big[ib][jb] = small[is][js];
-                }
-                else
-                {
-                    big[ib][jb] = small[is][js];
-                }
-                // big.DumpToFile("big.txt");
-            }
-
-            //if on the middle horizontal band
-            if (is == srows / 2)
-                ib += 2;
-        }
-        // big.fill(small);
-        // small.DumpToFile("SMALL.txt");
-        // big.DumpToFile("big.txt");
-        small = big;
-    }
-
-    void growOneMatrix(Matrix<double> &small)
-    {
-        int scols = small.cols();
-        int srows = small.rows();
-        int bcols = scols + 1;
-        int brows = srows + 1;
-
-        Matrix<double> big(brows, bcols);
-
-        //growing from the inside like a cross, using the average of the side cells as the new temp
-        for (int is = 0, ib = 0; is < srows; ++is, ++ib)
-        {
-            for (int js = 0, jb = 0; js < scols; ++js, ++jb)
-            {
-                //if on the middle horizontal band
-                if (is == srows / 2)
-                {
-                    big[ib + 1][jb] = small[is][js];
-                    big[ib][jb] = (small[is][js] + small[is - 1][js]) / 2;
-
-                    //if on the middle square
-                    if (js == scols / 2)
-                    {
-                        big[ib][jb] = (small[is - 1][js - 1] + small[is - 1][js] + small[is][js - 1] + small[is][js]) / 4;
-                        big[ib + 1][jb] = (small[is][js] + small[is][js - 1]) / 2;
-                        big[ib][jb + 1] = (small[is][js] + small[is - 1][js]) / 2;
-
-                        big[ib + 1][jb + 1] = small[is][js];
-
-                        ++jb;
-                    }
-                }
-
-                //if on the middle vertical band
-                else if (js == scols / 2)
-                {
-                    big[ib][jb] = (small[is][js] + small[is][js - 1]) / 2;
-
-                    ++jb;
-
-                    big[ib][jb] = small[is][js];
-                }
-                else
-                {
-                    big[ib][jb] = small[is][js];
-                }
-            }
-            //if on the middle horizontal band
-            if (is == srows / 2)
-                ++ib;
-        }
-
-        // for (int i = 1; i <= srows; ++i)
-        //     for (int j = 1; j <= scols; ++j)
-        //     {
-        //         big[i][j] = small[i - 1][j - 1];
-        //     }
-        // big.fill(small);
-        // big.DumpToFile("UltimaCrecidaenUno.txt");
-        small = big;
-    }
-
     /**
-     * @brief Fills a matrix that is less than double the size of another matrix used to fill it. It copies 
-     * the last rigthmost columns of the smaller matrix  into the rightmost columns of the big matirx, it
-     * does similar to the bottom part, but the bottom part of the rigmtost section uses the values set when
-     * filling the rightmost section
+     * @brief Fills a matrix up to the size specified. It grows the matrix by adding the average of the values of the middle temperatures to a centered cross section of the expanded matrix
      * 
      * @param small The matrix used to fill the new matrix, and also were this new matrix is returned
      * @param rows The row size of the new bigger matrix
@@ -1394,35 +1312,13 @@ class LiebmnanSolver
         small = big;
     }
 
-    void fillBiggerTempMatrix(Matrix<double> &small, Matrix<double> &big)
-    {
-        int scols = small.cols();
-        int bcols = big.cols();
-        int srows = small.rows();
-        int brows = big.rows();
-
-        //matrix size was duplicated each old cell corresponds to 4 cells of the new one
-        if (scols * 2 == bcols && srows * 2 == brows)
-        {
-            int bigI, bigJ;
-            for (int i = 0; i < srows; ++i)
-                for (int j = 0; j < scols; ++j)
-                {
-                    bigI = i * 2;
-                    bigJ = j * 2;
-                    big[bigI][bigJ] = small[i][j];
-                    big[bigI + 1][bigJ] = small[i][j];
-                    big[bigI][bigJ + 1] = small[i][j];
-                    big[bigI + 1][bigJ + 1] = small[i][j];
-                }
-        }
-        else
-        {
-            //we just fill the bigger matrix with the small one
-            big.fill(small);
-        }
-    }
-
+    /**
+ * @brief Given an Edge vector of temps, returns another smaller Edge temperature of the specified size, by averaging the temperature values of the given Edge into equal sections to form the new one
+ * 
+ * @param temps The Edge temperature vector used to divide and calculate the temperatures of the new one
+ * @param size The desired temperature size Edge
+ * @return Edge 
+ */
     Edge averageEdgeTemp(Edge &temps, int size)
     {
         //if it's isolated no need to work
@@ -1457,7 +1353,7 @@ class LiebmnanSolver
         int overflow = tempSize % size;
         int end, j;
         double average;
-
+#pragma omp parallel for private(average)
         for (int i = 0; i <= size; ++i)
         {
             average = 0;
@@ -1493,3 +1389,5 @@ class LiebmnanSolver
 }; // namespace anpi
 
 } // namespace anpi
+
+#endif // LIEBMAN_HPP

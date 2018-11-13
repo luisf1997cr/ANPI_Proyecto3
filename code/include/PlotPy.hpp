@@ -123,6 +123,8 @@ public:
 
   void imgshow(anpi::Matrix<T> &);
 
+  void imgshow(anpi::Matrix<T> &image, std::string title);
+
   /**
      * Show all curves plotted so far.
      */

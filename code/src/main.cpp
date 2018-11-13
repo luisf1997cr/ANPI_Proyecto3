@@ -17,6 +17,7 @@
 #include "utils.hpp"
 #include "PlotPy.hpp"
 #include <chrono>
+#include <fstream>
 
 #include <boost/program_options.hpp>
 #include <boost/type_traits/is_complex.hpp>
@@ -28,30 +29,29 @@ namespace po = boost::program_options;
 ////////////////////////////////////////////////////////////////////////////
 //  Main program
 ////////////////////////////////////////////////////////////////////////////
-// int main(int argc, char *argv[])
-// {
-//   return 0;
-// }
+
 int main(int argc, char *argv[])
 {
 
   try
   {
     po::options_description desc("Allowed options");
-    desc.add_options()                                                                                                                //
-        ("help", "produce help message")                                                                                              //
-        ("top,t", po::value<std::vector<double>>(), "Indicates top border temperature in degrees Celsius")                            //
-        ("bottom,b", po::value<std::vector<double>>(), "Indicates bottom border temperature in degrees Celsius")                      //
-        ("left,l", po::value<std::vector<double>>(), "Indicates left border temperature in degrees Celsius")                          //
-        ("right,r", po::value<std::vector<double>>(), "Indicates right border temperature in degrees Celsius")                        //
-        ("error,e", po::value<double>()->default_value(0.001), "Desired error percentage used for calculation")                       //
-        ("lambda,a", po::value<double>()->default_value(1.3), "Desired relaxation step for Liebman. Must be between 1 and 2")         //
-        ("isolate,i", po::value<std::string>(), "Which border to isolate, i.e top, bottom, left or right")                            //
-        ("profile,p", po::value<std::string>(), "Indicates file to use for the termical profile")                                     //
-        ("horizontal,h", po::value<int>()->default_value(512), "Indicates the number of horizontal pixels to use in the calculation") //
-        ("vertical,v", po::value<int>()->default_value(512), "Indicates the number of vertical pixels to use in the calculation")     //
-        (",q", "Deactivate visualization")                                                                                            //
-        ("flux,f", "Show calculated heat flux vectors")                                                                               //
+    desc.add_options()                                                                                                                    //
+        ("help", "produce help message")                                                                                                  //
+        ("top,t", po::value<std::vector<double>>(), "Indicates top border temperature in degrees Celsius")                                //
+        ("bottom,b", po::value<std::vector<double>>(), "Indicates bottom border temperature in degrees Celsius")                          //
+        ("left,l", po::value<std::vector<double>>(), "Indicates left border temperature in degrees Celsius")                              //
+        ("right,r", po::value<std::vector<double>>(), "Indicates right border temperature in degrees Celsius")                            //
+        ("error,e", po::value<double>()->default_value(0.001), "Desired error percentage used for calculation")                           //
+        ("lambda,a", po::value<double>()->default_value(1.3), "Desired relaxation step for Liebman. Must be between 1 and 2")             //
+        ("isolate,i", po::value<std::string>(), "Which border to isolate, i.e top, bottom, left or right")                                //
+        ("parallel_optimization,o", po::value<bool>()->default_value(true), "Option to use paralellism")                                  //
+        ("simple_Liebman,s", po::value<bool>()->default_value(false), "Option to use the simple Liebman starting with a 0 filled Matrix") //
+        ("profile,p", po::value<std::string>(), "Indicates file to use for the termical profile")                                         //
+        ("horizontal,h", po::value<int>()->default_value(512), "Indicates the number of horizontal pixels to use in the calculation")     //
+        ("vertical,v", po::value<int>()->default_value(512), "Indicates the number of vertical pixels to use in the calculation")         //
+        (",q", "Deactivate visualization")                                                                                                //
+        ("flux,f", "Show calculated heat flux vectors")                                                                                   //
         ("grid,g", po::value<double>(), "Indicates the amount of pixels per grid cell to use in order to show the heat flux vectors");
 
     po::variables_map vm;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     {
       std::cout << desc << "\n\n";
       // std::cout
-      //     << "For the coefficient and root types, use one of the following:\n"
+      //     << "The program runs faster when sizes are a power of 2\n"
       //        "  float    real numbers with single precision \n"
       //        "  double   real numbers with double precision \n"
       //        "  fcomplex complex numbers with float components\n"
@@ -87,45 +87,81 @@ int main(int argc, char *argv[])
 
     po::notify(vm);
 
-    // std::string poly = vm["poly"].as<std::string>();
-
     // Default values
     int h, v;
+    bool parallel, simpleLieb;
     double error, lambda;
     anpi::Edge top, bot, left, right;
+
+    //if no temp is given edges are isolated
     top.isolated = true;
     bot.isolated = true;
     right.isolated = true;
     left.isolated = true;
 
+    if (vm.count("parallel_optimization"))
+    {
+      parallel = vm["parallel_optimization"].as<bool>();
+    }
+    if (vm.count("simple_Liebman"))
+    {
+      simpleLieb = vm["simple_Liebman"].as<bool>();
+    }
+
     if (vm.count("horizontal"))
     {
       h = vm["horizontal"].as<int>();
-      std::cout << "agarro horizontal  " << vm["horizontal"].as<int>() << std::endl;
+      if (h <= 0)
+      {
+        std::cout << "Error in Horizontal: Matrix has to be bigger that 1.\n Provided value  " << h << std::endl;
+        return EXIT_FAILURE;
+      }
     }
 
     if (vm.count("vertical"))
     {
       v = vm["vertical"].as<int>();
-      std::cout << "agarro vertical  " << vm["vertical"].as<int>() << std::endl;
+
+      if (v <= 0)
+      {
+        std::cout << "Error in Vertical: Matrix has to be bigger that 1.\n Provided value:  " << v << std::endl;
+        return EXIT_FAILURE;
+      }
     }
 
     if (vm.count("lambda"))
     {
       lambda = vm["lambda"].as<double>();
-      // std::cout << "agarro horizontal  " << vm["horizontal"].as<int>() << std::endl;
+      if (lambda <= 1 || lambda >= 2)
+      {
+        std::cout << "Error in Lamdba value: Value must be between 1 and 2.\n Provided value:  " << lambda << std::endl;
+        return EXIT_FAILURE;
+      }
     }
+
     if (vm.count("error"))
     {
       error = vm["error"].as<double>();
-      // std::cout << "agarro horizontal  " << vm["horizontal"].as<int>() << std::endl;
     }
 
     if (vm.count("profile"))
     {
-      //check file and parse
-      std::cout << "agarro profile: " << vm["profile"].as<std::string>() << std::endl;
+      std::string filename = vm["profile"].as<std::string>();
+      try
+      {
+        if (!anpi::readTempFile(filename, top, bot, right, left, v, h))
+        {
+          std::cout << "Error reading profile file: " << filename << "   Ignoring the file.  " << std::endl;
+          // std::cout << "Received value cannot be made into double.  Received value: " << curr << std::endl;
+        }
+      }
+      catch (anpi::Exception e)
+      {
+        std::cout << "Error reading profile file: " << filename << "   Ignoring the file.  " << std::endl;
+        std::cerr << e.what() << '\n';
+      }
     }
+
     if (vm.count("top"))
     {
       std::vector<double> temps = vm["top"].as<std::vector<double>>();
@@ -248,38 +284,35 @@ int main(int argc, char *argv[])
           return EXIT_FAILURE;
         }
       }
-
-      std::cout << "agarro isolate: " << vm["isolate"].as<std::string>() << std::endl;
     }
 
     /////////////////////////////////////////////LIEBAMN CALL///////////////////////////////////////
     //do the liebman calculations
-    anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda);
+    anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda, parallel, simpleLieb);
 
     std::cout << "\nEl método Liebman Piramidal:\n " << std::endl;
     auto t_start = std::chrono::high_resolution_clock::now();
-    ls.lieb();
+    double timeSec = ls.lieb();
     auto t_end = std::chrono::high_resolution_clock::now();
-    double timeSec((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
+    double outTime = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
+
     std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
 
-    std::cout << "\nEl método Liebman normal: \n " << std::endl;
-    anpi::Matrix<double> m(v, h);
-    t_start = std::chrono::high_resolution_clock::now();
-    auto it = ls.liebman(m, top, bot, right, left);
-    t_end = std::chrono::high_resolution_clock::now();
-    timeSec = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
-    std::cout << "iterations: " << it
-              << std::endl;
-    // anpi::printMatrix(ls.tempsMatrix);
-    std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
+    std::cout << "La medida externa de tiempo: " << outTime << " segundos" << std::endl;
+
+    // std::cout << "\nEl método Liebman normal: \n " << std::endl;
+    // anpi::Matrix<double> m(v, h);
+    // t_start = std::chrono::high_resolution_clock::now();
+    // auto it = ls.liebman(m, top, bot, right, left);
+    // t_end = std::chrono::high_resolution_clock::now();
+    // timeSec = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
+    // std::cout << "iterations: " << it
+    //           << std::endl;
+    // // anpi::printMatrix(ls.tempsMatrix);
+    // std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
 
     // ls.tempsMatrix.DumpToFile("matrizFinal.txt");
-    anpi::Plot2d<double> plotter;
-    plotter.initialize();
-    plotter.imgshow(ls.tempsMatrix);
-    // plotter.imgshow(m);
-    plotter.show();
+
     //end calculations with no visualization
 
     if (vm.count("-q"))
@@ -297,7 +330,15 @@ int main(int argc, char *argv[])
     {
     }
 
-    // return EXIT_SUCCESS;
+    //show visual grid
+    anpi::Plot2d<double> plotter;
+    plotter.initialize();
+    std::string title = "Matriz de ";
+    title.append(std::to_string(v) + std::string("x")).append(std::to_string(h));
+    plotter.imgshow(ls.tempsMatrix, title);
+    plotter.show();
+
+    return EXIT_SUCCESS;
 
     //show heat flux vectors
 

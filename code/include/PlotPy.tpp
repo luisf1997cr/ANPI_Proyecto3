@@ -184,6 +184,12 @@ void Plot2d<T>::plot(const std::vector<T> &datax,
 template <typename T>
 void Plot2d<T>::imgshow(anpi::Matrix<T> &image)
 {
+  imgshow(image, "Placa");
+}
+
+template <typename T>
+void Plot2d<T>::imgshow(anpi::Matrix<T> &image, std::string title)
+{
   std::string xstr = "x = [[";
   std::string c = ",";
   for (size_t i = 0; i < image.rows(); i++)
@@ -205,7 +211,9 @@ void Plot2d<T>::imgshow(anpi::Matrix<T> &image)
 
   PyRun_SimpleString(xstr.c_str());
   PyRun_SimpleString("fig, ax = plt.subplots(nrows=1, sharex=True, figsize=(10, 10))");
-  PyRun_SimpleString("ax.set_title('placa')");
+  std::string titleString = "ax.set_title('";
+  titleString.append(title + std::string("')"));
+  PyRun_SimpleString(titleString.c_str()); //("ax.set_title('" + title + "')");
   PyRun_SimpleString("im = ax.imshow(x, origin='upper', interpolation='bilinear',cmap='plasma')");
 
   PyRun_SimpleString("divider = make_axes_locatable(ax)");

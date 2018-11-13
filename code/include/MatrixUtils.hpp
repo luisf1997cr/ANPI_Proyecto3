@@ -1,7 +1,7 @@
 /**
  * @file MatrixUtils.hpp
- * @author your name (you@domain.com)
- * @brief 
+ * @author Jorge Agüero
+ * @brief Utility functions to help work with Matrixes
  * @version 0.1
  * @date 2018-11-11
  * 
@@ -19,6 +19,13 @@ namespace anpi
 {
 
 //---------------------------------------helping functions Tarea 4-----------------------------------//
+/**
+ * @brief Print given matrix to std::cout
+ * 
+ * @tparam Type of values in the matrix
+ * @tparam anpi::aligned_row_allocator<T> Allocator used in the matrix
+ * @param A Matrix to print
+ */
 template <class T, typename Alloc = typename anpi::aligned_row_allocator<T>>
 inline void printMatrix(anpi::Matrix<T, Alloc> &A)
 {
@@ -33,6 +40,12 @@ inline void printMatrix(anpi::Matrix<T, Alloc> &A)
     }
 }
 
+/**
+ * @brief Print given matrix to std::cout
+ * 
+ * @tparam T type of values in Matrix
+ * @param A Matrix to print
+ */
 template <class T>
 inline void printMatrix(anpi::Matrix<T> &A)
 {
