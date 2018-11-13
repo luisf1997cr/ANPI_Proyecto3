@@ -158,7 +158,7 @@ class LiebmnanSolver
      * @brief Constructs a solver given the different edge temperatures, a final size of the matrix, the error to use for calculation, the lambda used for relaxation (between 1 and 2), and wether the calculations should be parallelized
      * 
      */
-    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror, double inlambda, bool parallel, bool simpleLieb) //, Matrix<double> &temps)
+    LiebmnanSolver(Edge toptemp, Edge botttemp, Edge rightemp, Edge leftemp, int vsize, int hsize, double inerror, double inlambda, bool inparallel, bool simpleLieb) //, Matrix<double> &temps)
     {
         top = toptemp;
         bottom = botttemp;
@@ -169,7 +169,7 @@ class LiebmnanSolver
         // tempsMatrix = temps;
         error = inerror;
         lambda = inlambda;
-        parallelized = parallel;
+        parallelized = inparallel;
         simpleLiebman = simpleLieb;
     }
 
