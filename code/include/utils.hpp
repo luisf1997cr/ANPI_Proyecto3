@@ -141,8 +141,44 @@ bool readTempFile(std::string filename, Edge &top, Edge &bottom, Edge &right, Ed
 * @param SizeVecBordes
 * @param VecTemperaturas
 * @param VecBordesValues
+<<<<<<< HEAD
 */
 
+=======
+// */
+// template <typename T>
+// void obtainVecBordesValues(const int SizeVecBordes,
+//                            const std::vector<T> &VecTemperaturas,
+//                            std::vector<T> &VecBordesValues)
+// {
+
+//     if (VecTemperaturas.size() >= 3)
+//     {
+//         spline<T>(SizeVecBordes, VecTemperaturas, VecBordesValues);
+//         std::cout << "using splines \n";
+//     }
+
+//     else if (VecTemperaturas.size() == 2)
+//     {
+//         anpi::linspace( VecTemperaturas, VecBordesValues);
+//         std::cout << "lineal increment \n";
+//     }
+
+//     else if (VecTemperaturas.size() == 1)
+//     {
+//         for (int i = 0; i < SizeVecBordes; i++)
+//         {
+//             VecBordesValues.push_back(VecTemperaturas[0]);
+//         }
+//         std::cout << "constant values \n";
+//     }
+
+//     else
+//     {
+//         std::cout << "border isolated \n";
+//     }
+// }
+>>>>>>> bb9bba5910d7b98728593a550b0bbbd77703c707
 } // namespace anpi
 
 #endif
