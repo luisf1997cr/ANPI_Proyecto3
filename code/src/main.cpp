@@ -26,6 +26,8 @@
 
 namespace po = boost::program_options;
 
+const int TEST_SIZE = 200;
+
 ////////////////////////////////////////////////////////////////////////////
 //  Main program
 ////////////////////////////////////////////////////////////////////////////
@@ -36,23 +38,25 @@ int main(int argc, char *argv[])
   try
   {
     po::options_description desc("Allowed options");
-    desc.add_options()                                                                                                                    //
-        ("help", "produce help message")                                                                                                  //
+    desc.add_options()("help", "produce help message")                                                                                //
+        ("test", "produce a sample test with different options to show times")                                                        //                                                                                                                 //
+        ("horizontal,h", po::value<int>()->default_value(512), "Indicates the number of horizontal pixels to use in the calculation") //
+        ("vertical,v", po::value<int>()->default_value(512), "Indicates the number of vertical pixels to use in the calculation")     //
+
         ("top,t", po::value<std::vector<double>>(), "Indicates top border temperature in degrees Celsius")                                //
         ("bottom,b", po::value<std::vector<double>>(), "Indicates bottom border temperature in degrees Celsius")                          //
         ("left,l", po::value<std::vector<double>>(), "Indicates left border temperature in degrees Celsius")                              //
         ("right,r", po::value<std::vector<double>>(), "Indicates right border temperature in degrees Celsius")                            //
-        ("error,e", po::value<double>()->default_value(0.001), "Desired error percentage used for calculation")                           //
+        ("error,e", po::value<double>()->default_value(0.001), "Desired error difference used for calculation")                           //
         ("lambda,a", po::value<double>()->default_value(1.3), "Desired relaxation step for Liebman. Must be between 1 and 2")             //
         ("isolate,i", po::value<std::string>(), "Which border to isolate, i.e top, bottom, left or right")                                //
         ("parallel_optimization,o", po::value<bool>()->default_value(true), "Option to use paralellism")                                  //
         ("simple_Liebman,s", po::value<bool>()->default_value(false), "Option to use the simple Liebman starting with a 0 filled Matrix") //
-        ("profile,p", po::value<std::string>(), "Indicates file to use for the termical profile")                                         //
-        ("horizontal,h", po::value<int>()->default_value(512), "Indicates the number of horizontal pixels to use in the calculation")     //
-        ("vertical,v", po::value<int>()->default_value(512), "Indicates the number of vertical pixels to use in the calculation")         //
         (",q", "Deactivate visualization")                                                                                                //
-        ("flux,f", "Show calculated heat flux vectors")                                                                                   //
-        ("grid,g", po::value<double>(), "Indicates the amount of pixels per grid cell to use in order to show the heat flux vectors");
+        ("profile,p", po::value<std::string>(), "Indicates file to use for the termical profile [NOT WORKING]")                           //
+
+        ("flux,f", "Show calculated heat flux vectors [NOT WORKING]") //
+        ("grid,g", po::value<double>(), "Indicates the amount of pixels per grid cell to use in order to show the heat flux vectors [NOT WORKING]");
 
     po::variables_map vm;
 
@@ -61,26 +65,13 @@ int main(int argc, char *argv[])
     if (vm.count("help"))
     {
       std::cout << desc << "\n\n";
-      // std::cout
-      //     << "The program runs faster when sizes are a power of 2\n"
-      //        "  float    real numbers with single precision \n"
-      //        "  double   real numbers with double precision \n"
-      //        "  fcomplex complex numbers with float components\n"
-      //        "  dcomplex complex numbers with double components\n\n"
-      //     << "The polynomial formulae are composed by one or more \n"
-      //        "polynomial terms:\n"
-      //        "  polynomial  := term [ {'+'|'-'} term ]*\n"
-      //        "  term        := coefficient 'x^' exponent\n"
-      //        "  coefficient := double | complex\n"
-      //        "  complex     := { '(' double ',' double ')' } | (double)\n"
-      //        "  exponent    := unsigned integral\n\n"
-      //     << "Examples of valid polynomials:\n"
-      //        "  x^3 + 2x + 1\n"
-      //        "  -5x^4 + 2.5x^2 + x\n"
-      //        "  -3x + 5x^4 + 1 -2x^2\n"
-      //        "  (0,1)x^4 + (5,2)x^2 + 1.5x + (1.5,2)\n"
-      //        "The last example has some complex coefficients"
-      //     << std::endl;
+      std::cout
+          << "The program runs faster when sizes are a power of 2\n"
+             "The program will output the matrices it used to do the calculations\n"
+             "as well as the number of iterations it took on each of the matrices \n"
+             "The program will also display the time it took to calcualte the solution\n"
+
+          << std::endl;
 
       return EXIT_SUCCESS;
     }
@@ -88,9 +79,9 @@ int main(int argc, char *argv[])
     po::notify(vm);
 
     // Default values
-    int h, v;
-    bool parallel, simpleLieb;
-    double error, lambda;
+    int h = 0, v = 0;
+    bool parallel = true, simpleLieb = false;
+    double error = 0.001, lambda = 1.3;
     anpi::Edge top, bot, left, right;
 
     //if no temp is given edges are isolated
@@ -98,6 +89,46 @@ int main(int argc, char *argv[])
     bot.isolated = true;
     right.isolated = true;
     left.isolated = true;
+
+    if (vm.count("test"))
+    {
+
+      top.isolated = false;
+      bot.isolated = false;
+      right.isolated = false;
+      left.isolated = false;
+      top.temperatures.resize(TEST_SIZE, 50);
+      bot.temperatures.resize(TEST_SIZE, 100);
+      left.temperatures.resize(TEST_SIZE, 0);
+      right.temperatures.resize(TEST_SIZE, 30);
+      double timeSec;
+
+      std::cout << "---------------------Simple Liebman (without parallelism, nor piramid calculation)---------------------------" << std::endl;
+      anpi::LiebmnanSolver ls(top, bot, right, left, TEST_SIZE, TEST_SIZE, 0.001, 1.35, false, true);
+      timeSec = ls.lieb();
+      std::cout << "El método tardó: " << timeSec << " segundos\n\n"
+                << std::endl;
+
+      std::cout << "---------------------Simple Liebman with parallelism (no piramid calculation)---------------------------" << std::endl;
+      anpi::LiebmnanSolver ls1(top, bot, right, left, TEST_SIZE, TEST_SIZE, 0.001, 1.35, true, true);
+      timeSec = ls1.lieb();
+      std::cout << "El método tardó: " << timeSec << " segundos\n\n"
+                << std::endl;
+      std::cout << "---------------------Simple Liebman with Piramid calculation (without parallelism)--------------------------" << std::endl;
+      anpi::LiebmnanSolver ls2(top, bot, right, left, TEST_SIZE, TEST_SIZE, 0.001, 1.35, false, false);
+      timeSec = ls2.lieb();
+      std::cout << "El método tardó: " << timeSec << " segundos\n\n"
+                << std::endl;
+      std::cout << "---------------------Optimized Liebman with Piramid calculation & parallelism--------------------------" << std::endl;
+      anpi::LiebmnanSolver ls3(top, bot, right, left, TEST_SIZE, TEST_SIZE, 0.001, 1.35, false, false);
+      timeSec = ls3.lieb();
+      std::cout << "El método tardó: " << timeSec << " segundos\n\n"
+                << std::endl;
+
+      return EXIT_SUCCESS;
+
+      // anpi::LiebmnanSolver ls
+    }
 
     if (vm.count("parallel_optimization"))
     {
@@ -290,15 +321,11 @@ int main(int argc, char *argv[])
     //do the liebman calculations
     anpi::LiebmnanSolver ls(top, bot, right, left, v, h, error, lambda, parallel, simpleLieb);
 
-    std::cout << "\nEl método Liebman Piramidal:\n " << std::endl;
-    auto t_start = std::chrono::high_resolution_clock::now();
+    std::cout << "\nEl método Liebmann:\n " << std::endl;
+
     double timeSec = ls.lieb();
-    auto t_end = std::chrono::high_resolution_clock::now();
-    double outTime = ((std::chrono::duration<double, std::milli>(t_end - t_start).count()) / 1000);
 
-    std::cout << "El método tardo: " << timeSec << " segundos" << std::endl;
-
-    std::cout << "La medida externa de tiempo: " << outTime << " segundos" << std::endl;
+    std::cout << "El método tardó: " << timeSec << " segundos" << std::endl;
 
     // std::cout << "\nEl método Liebman normal: \n " << std::endl;
     // anpi::Matrix<double> m(v, h);
