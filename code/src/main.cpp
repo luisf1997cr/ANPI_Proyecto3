@@ -357,11 +357,13 @@ int main(int argc, char *argv[])
     plotter.initialize();
     std::string title = "Matriz de ";
     title.append(std::to_string(v) + std::string("x")).append(std::to_string(h));
-    plotter.imgshow(ls.tempsMatrix, title);
+    // plotter.imgshow(ls.tempsMatrix, title);
 
     if (vm.count("flux"))
     {
+      std::cout << "se mete a FLUX\n";
       plotter.quiver(ls.tempsMatrix);
+      plotter.show();
     }
     if (vm.count("grid"))
     {
