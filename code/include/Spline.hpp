@@ -131,24 +131,24 @@ void interpolate(const int SizeX,
      * @param Valores de Y
      * @return void
      */
-template <typename T>
-void spline(const int vecxSize, const std::vector<T> &VecY, std::vector<T> &interpolValue)
-{
+// template <typename T>
+// void spline(const int vecxSize, const std::vector<T> &VecY, std::vector<T> &interpolValue)
+// {
 
-  std::vector<T> VecX;
+//   std::vector<T> VecX;
 
-  VecXFiller(vecxSize, VecX, VecY);
+//   VecXFiller(vecxSize, VecX, VecY);
 
-  Matrix<T> A;
-  std::vector<T> x;
-  std::vector<T> b;
+//   Matrix<T> A;
+//   std::vector<T> x;
+//   std::vector<T> b;
 
-  operandFiller(VecX, VecY, A, x, b);
+//   operandFiller(VecX, VecY, A, x, b);
 
-  thomas(A, x, b);
+//   thomas(A, x, b);
 
-  interpolate(SizeX, VecX, VecY, x, interpolatedValues);
-}
+//   interpolate(SizeX, VecX, VecY, x, interpolatedValues);
+// }
 
 } // namespace anpi
 
