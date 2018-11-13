@@ -358,7 +358,6 @@ int main(int argc, char *argv[])
     std::string title = "Matriz de ";
     title.append(std::to_string(v) + std::string("x")).append(std::to_string(h));
     plotter.imgshow(ls.tempsMatrix, title);
-    
 
     if (vm.count("flux"))
     {
