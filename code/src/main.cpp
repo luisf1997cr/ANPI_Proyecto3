@@ -325,19 +325,22 @@ int main(int argc, char *argv[])
 
     //show color visuals
 
-    if (vm.count("flux"))
-    {
-    }
-    if (vm.count("grid"))
-    {
-    }
-
     //show visual grid
     anpi::Plot2d<double> plotter;
     plotter.initialize();
     std::string title = "Matriz de ";
     title.append(std::to_string(v) + std::string("x")).append(std::to_string(h));
     plotter.imgshow(ls.tempsMatrix, title);
+    
+
+    if (vm.count("flux"))
+    {
+      plotter.quiver(ls.tempsMatrix);
+    }
+    if (vm.count("grid"))
+    {
+    }
+
     plotter.show();
 
     return EXIT_SUCCESS;
