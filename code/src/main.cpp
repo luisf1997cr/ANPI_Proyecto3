@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
     {
       std::cout << "se mete a FLUX\n";
       plotter.quiver(ls.tempsMatrix);
-      plotter.show();
+      // plotter.show();
     }
     if (vm.count("grid"))
     {
