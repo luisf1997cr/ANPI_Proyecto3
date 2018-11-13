@@ -40,6 +40,16 @@ template <typename T>
 void Plot2d<T>::quiver(anpi::Matrix<T> &image)
 {
 
+  std::string imageStr = "image" + " = np.array([";
+        for (int i = 0; i < image.rows(); ++i) {
+            imageStr.append("[");
+            for (int j = 0; j < image.cols(); ++j) {
+                imageStr.append(std::to_string(image[i][j]) + ",");
+            }
+            imageStr.append("],");
+        }
+        imageStr.append("])");
+
   std::string FluxFun = "def Flux(Matriz):\n";
   FluxFun.append("	k = 1\n");
   FluxFun.append("	delX = 1\n");
@@ -66,9 +76,10 @@ void Plot2d<T>::quiver(anpi::Matrix<T> &image)
   FluxFun.append("		a+=n\n");
   FluxFun.append("		b=0\n");
   FluxFun.append("	return [X,Y,u,v]\n");
+  PyRun_SimpleString(imageStr.c_str());
   PyRun_SimpleString(FluxFun.c_str());
   PyRun_SimpleString("FluxMatriz = Flux(image)");
-  PyRun_SimpleString("ax.quiver(FluxMatriz[0],FluxMatriz[1],FluxMatriz[2],FluxMatriz[3])");
+  PyRun_SimpleString("plt.quiver(FluxMatriz[0],FluxMatriz[1],FluxMatriz[2],FluxMatriz[3])");
 
   // Convert the vectors of data into Python strings
   //std::string xstr  = "X = [";
